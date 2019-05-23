@@ -173,7 +173,7 @@
 							j++;
 						}
 						
-						if(name=='已载入' || name=='确认安装' || name=='暂不安装' || name=='延后安装' || name=='提前预约' || name=='错误回复' || name=='无回复' || name=='环境不具备' || name=='待重呼' || name=='已失败' || name=='已过期' || name=='放弃呼叫') {
+						if(name=='已载入' || name=='确认安装' || name=='暂不安装' || name=='延后安装' || name=='提前预约' || name=='无/错回复' || name=='待重呼' || name=='已失败' || name=='已过期' || name=='放弃呼叫') {
 							seriesData2[k] = map;
 							k++;
 						}
@@ -204,9 +204,7 @@
 								else if(name=='暂不安装') {pvV = respond2Count;  ppV = respond2Rate; space='    '}
 								else if(name=='延后安装') {pvV = respond3Count;  ppV = respond3Rate; space='    '}
 								else if(name=='提前预约') {pvV = respond4Count;  ppV = respond4Rate; space='    '}
-								else if(name=='错误回复') {pvV = respond5Count;  ppV = respond5Rate; space='   '}
-								else if(name=='无回复') {pvV = respond9Count;  ppV = respond9Rate; space='   '}
-								else if(name=='环境不具备') {pvV = respond10Count;  ppV = respond10Rate; space='   '}
+								else if(name=='无/错回复') {pvV = respond5Count;  ppV = respond5Rate; space='   '}
 								return  name + space + "(占比 ：" + ppV + "%)";
 							}
 						},
@@ -236,8 +234,8 @@
     	function getSummaryData() {
     		
     		var summaryData = '{"total":2,"rows":[';
-    		summaryData += '{"category":"数量","totalData":' + totalCount + ',"state1Data":' + state1Count + ',"state2Data":' + state2Count + ',"state3Data":' + state3Count + ',"state4Data":' + state4Count + ',"state5Data":' + state5Count + ',"state6Data":' + state6Count + ',"respond1Data":' + respond1Count + ',"respond2Data":' + respond2Count + ',"respond3Data":' + respond3Count + ',"respond4Data":' + respond4Count + ',"respond5Data":' + respond5Count + ',"respond9Data":' + respond9Count + ',"respond10Data":' + respond10Count + '},';
-    		summaryData += '{"category":"占比","totalData":"' + totalRate + '%' + '","state1Data":"' + state1Rate  + '%' + '","state2Data":"' + state2Rate  + '%' + '","state3Data":"' + state3Rate  + '%' + '","state4Data":"' + state4Rate  + '%' + '","state5Data":"' + state5Rate  + '%' + '","state6Data":"' + state6Rate  + '%' + '","respond1Data":"' + respond1Rate  + '%' + '","respond2Data":"' + respond2Rate  + '%' + '","respond3Data":"' + respond3Rate  + '%' + '","respond4Data":"' + respond4Rate  + '%' + '","respond5Data":"' + respond5Rate  + '%' + '","respond9Data":"' + respond9Rate  + '%' + '","respond10Data":"' + respond10Rate  + '%' + '"}';
+    		summaryData += '{"category":"数量","totalData":' + totalCount + ',"state1Data":' + state1Count + ',"state2Data":' + state2Count + ',"state3Data":' + state3Count + ',"state4Data":' + state4Count + ',"state5Data":' + state5Count + ',"state6Data":' + state6Count + ',"respond1Data":' + respond1Count + ',"respond2Data":' + respond2Count + ',"respond3Data":' + respond3Count + ',"respond4Data":' + respond4Count + ',"respond5Data":' + respond5Count + '},';
+    		summaryData += '{"category":"占比","totalData":"' + totalRate + '%' + '","state1Data":"' + state1Rate  + '%' + '","state2Data":"' + state2Rate  + '%' + '","state3Data":"' + state3Rate  + '%' + '","state4Data":"' + state4Rate  + '%' + '","state5Data":"' + state5Rate  + '%' + '","state6Data":"' + state6Rate  + '%' + '","respond1Data":"' + respond1Rate  + '%' + '","respond2Data":"' + respond2Rate  + '%' + '","respond3Data":"' + respond3Rate  + '%' + '","respond4Data":"' + respond4Rate  + '%' + '","respond5Data":"' + respond5Rate  + '%' + '"}';
     		summaryData += "]}";
     		
     		return JSON.parse(summaryData);
@@ -298,10 +296,6 @@
 					param.respond4Rate = respond4Rate,
 					param.respond5Count = respond5Count,
 					param.respond5Rate = respond5Rate,
-					param.respond9Count = respond9Count,
-					param.respond9Rate = respond9Rate,
-					param.respond10Count = respond10Count,
-					param.respond10Rate = respond10Rate,
 					param.startTime = $("#startTime").datebox('getValue'),
     				param.endTime = $("#endTime").datebox('getValue')
 				},
@@ -353,8 +347,7 @@
     	function respond3DataFormatter(value,data,index){ return "<span style='font-weight:bolder'>" + value + "</span>"; }
     	function respond4DataFormatter(value,data,index){ return "<span style='font-weight:bolder'>" + value + "</span>"; }
     	function respond5DataFormatter(value,data,index){ return "<span style='font-weight:bolder'>" + value + "</span>"; }
-    	function respond9DataFormatter(value,data,index){ return "<span style='font-weight:bolder'>" + value + "</span>"; }
-    	function respond10DataFormatter(value,data,index){ return "<span style='font-weight:bolder'>" + value + "</span>"; }
+    	
     </script>
 </head>
 <body>
@@ -419,9 +412,7 @@
 						<th data-options="field:'respond2Data',width:90,align:'center',formatter:respond2DataFormatter">暂不安装</th>
 						<th data-options="field:'respond3Data',width:90,align:'center',formatter:respond3DataFormatter">延后安装</th>
 						<th data-options="field:'respond4Data',width:90,align:'center',formatter:respond4DataFormatter">提前预约</th>
-						<th data-options="field:'respond5Data',width:90,align:'center',formatter:respond5DataFormatter">错误回复</th>
-						<th data-options="field:'respond9Data',width:90,align:'center',formatter:respond9DataFormatter">无回复</th>
-						<th data-options="field:'respond10Data',width:90,align:'center',formatter:respond10DataFormatter">环境不具备</th>
+						<th data-options="field:'respond5Data',width:90,align:'center',formatter:respond5DataFormatter">无/错回复</th>
 					</tr>
 				</thead>
 			</table>
@@ -457,7 +448,7 @@ option = null;
 app.title = '嵌套环形图';
 
 option = {
-	color: ['#f8d013','#00ff00', '#fc00ff', '#ff0000', '#fb5c5c','#fa1616',  '#04b904', '#07b3fa','#55cafa','#8cdcfc','#666666', '#9c9c9c',"#c7c7c7"],
+	color: ['#f8d013','#00ff00', '#fc00ff', '#ff0000', '#fb5c5c','#fa1616',  '#04b904', '#07b3fa','#55cafa','#8cdcfc','#666666', '#001100'],
 	title:{
 		text:'BSH外呼系统时间区间内的外呼情况展示',
 		subtext:'时间区间:2018-05-01 00:00:00 至 2018-05-02 00:00:00',
@@ -498,7 +489,7 @@ option = {
     legend: {
         orient: 'vertical',
         x: 'left',
-        data:['已载入','已成功','确认安装','暂不安装','延后安装','提前预约','错误回复','无回复','环境不具备','待重呼','已失败','已过期','放弃呼叫']
+        data:['已载入','已成功','确认安装','暂不安装','延后安装','提前预约','无/错回复','待重呼','已失败','已过期','放弃呼叫']
     },
     series: [
         {
@@ -654,18 +645,10 @@ option = {
                     		respond4Count = pv;
                     		respond4Rate = pp;
                     		pnEnglish = 'Postpone Installation';
-                    	}else if(pn=='错误回复') {
+                    	}else if(pn=='无/错回复') {
                     		respond5Count = pv;
                     		respond5Rate = pp;
-                    		pnEnglish = 'Wrong Reply';
-                    	}else if(pn=='无回复') {
-                    		respond9Count = pv;
-                    		respond9Rate = pp;
-                    		pnEnglish = 'No Reply';
-                    	}else if(pn=='环境不具备') {
-                    		respond10Count = pv;
-                    		respond10Rate = pp;
-                    		pnEnglish = 'Environment Not Required';
+                    		pnEnglish = 'No/Wrong Reply';
                     	}else if(pn=='已载入') {
                     		pnEnglish = 'Loaded';
                     	}else if(pn=='待重呼') {
@@ -729,9 +712,7 @@ option = {
                 {value:0, name:'暂不安装'},
                 {value:0, name:'延后安装'},
                 {value:0, name:'提前预约'},
-                {value:0, name:'错误回复'},
-                {value:0, name:'无回复'},
-                {value:0, name:'环境不具备'},
+                {value:0, name:'无/错回复'},
                 {value:0, name:'待重呼'},
                 {value:0, name:'已失败'},
                 {value:0, name:'已过期'},
@@ -797,18 +778,10 @@ myChart.on('dblclick',function(params){
 		title += ",客户回复：提前预约";
 		conditionState = 2;
 		conditionRespond = 4;
-	}else if(name=='错误回复') {
-		title += ",客户回复：错误回复";
+	}else if(name=='无/错回复') {
+		title += ",客户回复：无/错回复";
 		conditionState = 2;
 		conditionRespond = 5;
-	}else if(name=='无回复') {
-		title += ",客户回复：无回复";
-		conditionState = 2;
-		conditionRespond = 9;
-	}else if(name=='环境不具备') {
-		title += ",客户回复：环境不具备";
-		conditionState = 2;
-		conditionRespond = 10;
 	}
 	
 	var channelSourceText = $("#channelSource").combobox('getText');

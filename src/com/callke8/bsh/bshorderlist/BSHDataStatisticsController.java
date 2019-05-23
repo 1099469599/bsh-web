@@ -82,11 +82,23 @@ public class BSHDataStatisticsController extends Controller {
 		respond4Data.set("value", data.get("respond4Data"));
 		list.add(respond4Data);
 		
-		//无/错回复
+		//错误回复
 		Record respond5Data = new Record();
-		respond5Data.set("name", "无/错回复");
+		respond5Data.set("name", "错误回复");
 		respond5Data.set("value", data.get("respond5Data"));
 		list.add(respond5Data);
+		
+		//无回复
+		Record respond9Data = new Record();
+		respond9Data.set("name", "无回复");
+		respond9Data.set("value", data.get("respond9Data"));
+		list.add(respond9Data);
+		
+		//无回复
+		Record respond10Data = new Record();
+		respond10Data.set("name", "环境不具备");
+		respond10Data.set("value", data.get("respond10Data"));
+		list.add(respond10Data);
 		
 		//待重呼
 		Record state3Data = new Record();

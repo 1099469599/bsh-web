@@ -1,6 +1,7 @@
 package com.callke8.bsh.common;
 
 import com.callke8.bsh.bshcallflow.BSHCallFlowController;
+import com.callke8.bsh.bshcallflow.BSHPrefixCallFlowController;
 import com.callke8.bsh.bshcallparam.BSHCallParamController;
 import com.callke8.bsh.bshorderlist.BSHDataStatisticsController;
 import com.callke8.bsh.bshorderlist.BSHOrderListController;
@@ -19,7 +20,7 @@ public class BSHRoute extends Routes {
 		add("/bshCallParam",BSHCallParamController.class,"/bsh/bshcallparam");
 		add("/bshRealTimeData",BSHRealTimeDataController.class,"/bsh/bshrealtimedata");
 		add("/bshDataStatistics",BSHDataStatisticsController.class,"/bsh/bshdatastatistics");
-		
+		add("/bshPrefixCallFlow",BSHPrefixCallFlowController.class,"/bsh/bshcallflow");
 	}
 
 }

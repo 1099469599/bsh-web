@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.servlet.http.HttpServletRequest;
+
 import com.callke8.bsh.bshcallparam.BSHCallParamConfig;
 import com.callke8.common.CommonController;
 import com.callke8.common.IController;
@@ -21,6 +23,7 @@ import com.callke8.utils.DateFormatUtils;
 import com.callke8.utils.ExcelExportUtil;
 import com.callke8.utils.NumberUtils;
 import com.callke8.utils.TelephoneLocationUtils;
+import com.callke8.utils.TelephoneNumberUtils;
 import com.jfinal.core.Controller;
 import com.jfinal.plugin.activerecord.Record;
 
@@ -51,6 +54,7 @@ public class BSHOrderListController extends Controller implements IController {
 		String customerTel = getPara("customerTel");
 		String brand = getPara("brand");
 		String productName = getPara("productName");
+		String isConfirm = getPara("isConfirm");
 		String state = getPara("state");
 		String respond = getPara("respond");
 		String timeType = getPara("timeType");
@@ -74,14 +78,177 @@ public class BSHOrderListController extends Controller implements IController {
 		Integer pageSize = BlankUtils.isBlank(getPara("rows"))?1:Integer.valueOf(getPara("rows"));
 		Integer pageNumber = BlankUtils.isBlank(getPara("page"))?1:Integer.valueOf(getPara("page"));
 		
-		Map map = BSHOrderList.dao.getBSHOrderListByPaginateToMap(pageNumber, pageSize, orderId,channelSource,customerName, customerTel,brand,productName,state,respond,timeType,createTimeStartTime,createTimeEndTime,loadTimeStartTime,loadTimeEndTime);
+		Map map = BSHOrderList.dao.getBSHOrderListByPaginateToMap(pageNumber, pageSize, orderId,channelSource,customerName, customerTel,brand,productName,isConfirm,state,respond,timeType,createTimeStartTime,createTimeEndTime,loadTimeStartTime,loadTimeEndTime);
 		//System.out.println("map:" + map);
 		renderJson(map);
 		
 	}
 	
-	@Override
+	/**
+	 * 增加数据
+	 */
+	@Override 
 	public void add() {
+		
+		/**(1) 获取请求方式（GET OR POST）*/
+		String postType = getRequest().getMethod();        
+		
+		/** (2) 获取提交数据: 
+		 * 		POST: 接收 json 数据; 
+		 * 		GET: 接收URL参数;
+		*/
+		BSHOrderListVO orderListVO = null;    
+		if(postType.equalsIgnoreCase("POST")) {
+			orderListVO = BSHOrderListVO.newInstance(getJsonContent(this.getRequest()));     
+		} else {
+			orderListVO = BSHOrderListVO.newInstance(this);
+		}
+		
+		/**
+		 * （3）判断提交数据的完整性,主要判断是否有空值
+		 */
+		String checkDataResult = BSHOrderListVO.checkBSHOrderListVO(orderListVO);
+		if(!BlankUtils.isBlank(checkDataResult)) {
+			renderJson(resultMap("ERROR",checkDataResult));     
+			System.out.println(checkDataResult);                //输出接收数据失败原因
+			return;
+		}
+		
+		
+		/**
+		 * (4) 判断提交的主叫号码的格式：号码要求纯数字，长度为：7 至 12 位， 手机号码或是带区号的座机可以带一个前缀0
+		 * 	    无判断客户号码是否为手机或是座机号码
+		 */
+		String customerTel = orderListVO.getCustomerTel();      //取出客户的号码
+		boolean isMobilePhoneNumberOrFixedPhoneNumber = TelephoneNumberUtils.isMobilePhoneNumberOrFixedPhoneNumber(customerTel);
+		if(!isMobilePhoneNumberOrFixedPhoneNumber) {            //如果号码即不为座机，也不是手机号码，则返回错误
+			renderJson(resultMap("ERROR","接收订单数据失败,客户号码：" + customerTel + " 格式错误,非手机号码也非座机号码!格式必须为 7~12位纯数字号码."));   
+			System.out.println("接收订单数据失败,客户号码：" + customerTel + " 格式错误,非手机号码也非座机号码!格式必须为 7~12位纯数字号码.");                //输出接收数据失败原因
+			return;
+		}
+		
+		/**
+		 * (5) 组织上传到数据库的订单数据实体
+		 */
+		BSHOrderList bol = new BSHOrderList();
+		
+		//同时再判断期望安装日期与当前日期对比,如果期望安装日期与当前日期同一日，或是小于当前日期，则需要将呼叫状态修改为 5,即是（已过期）
+		boolean compareInstallDate2CurrentDate = compareInstallDate2CurrentDate(orderListVO.getExpectInstallDate());    //检查当前日期与安装日期是否已经过期
+		if(!compareInstallDate2CurrentDate) {    //如果已经过期，则直接将状态修改为5，即是安装日期已过期
+			bol.set("STATE","5");
+			renderJson(resultMap("ERROR","计划安装日期 是" + orderListVO.getExpectInstallDate() + ",已过期!"));
+			System.out.println("处理订单：" + orderListVO.getOrderId() + "失败,失败原因:" + "计划安装日期 是" + orderListVO.getExpectInstallDate() + ",已过期!");
+			return;
+		}else {
+			bol.set("STATE","0");
+		}
+		
+		//由于传入的安装日期为yyyyMMdd,数据表中的安装日期格式为 yyyy-MM-dd,需要转化一下
+		Date installDate = DateFormatUtils.parseDateTime(orderListVO.getExpectInstallDate(), "yyyyMMdd");
+		String expectInstallDateFormat = DateFormatUtils.formatDateTime(installDate, "yyyy-MM-dd");
+		bol.set("EXPECT_INSTALL_DATE",expectInstallDateFormat);
+		
+		//将客户号码进行二次处理，对客户号码进行归属地定位
+		boolean isMobilePhoneNumber = TelephoneNumberUtils.isMobilePhoneNumber(customerTel);  //判断客户号码是否为手机号码
+		if(isMobilePhoneNumber) {       //如果客户号码为手机号码时，处理方法
+			
+			//手机号码可能为带前缀0的手机号码，或是不带前缀0的手机号码，通过号码处理工具，将真实的手机号码取出
+			String mobilePhoneNumber = TelephoneNumberUtils.getMobilePhoneNumberNoPrefix0(customerTel);    //真实手机号码
+			//取出手机号码后，调用第三方资源，对手机号码进行归属地定位
+			Map<String,String> locationMap = TelephoneLocationUtils.getTelephoneLocation(mobilePhoneNumber, BSHCallParamConfig.getJuHeUrl(), BSHCallParamConfig.getJuHeAppKey());
+			if(!BlankUtils.isBlank(locationMap)) {      //如果号码归属地不为空时
+				
+				String province = locationMap.get("province");
+				String city = locationMap.get("city");
+				
+				bol.set("PROVINCE",province);
+				bol.set("CITY", city);
+				if(city.equalsIgnoreCase("南京")) {     				//如果城市为江苏南京时，即是本地号码，外呼时号码无需加前缀0
+					bol.set("CALLOUT_TEL", customerTel);
+				}else {
+					bol.set("CALLOUT_TEL", "0" + customerTel);		//外地号码需要加前缀0
+				}
+			}else {       //无法定位手机号码属性地时，有可能是一个假的号码
+				renderJson(resultMap("ERROR","客户号码 " + customerTel + " 格式 正确，但无法定位归属地，号码异常!"));
+				System.out.println("处理订单：" + orderListVO.getOrderId() + "失败,失败原因:" + "客户号码 " + customerTel + " 格式 正确，但无法定位归属地，号码异常!");
+				return;
+			}
+			
+		}else {                         //如果客户号码为座机号码时，处理方法
+			
+			boolean isFixedPhoneNumberWithAreaCode = TelephoneNumberUtils.isFixedPhoneNumberWithAreaCode(customerTel);
+			if(isFixedPhoneNumberWithAreaCode) {      //是否为带区号的固定号码
+				
+				String areaCode = TelephoneNumberUtils.getAreaCode(customerTel);   //取出区号
+				if(areaCode.equalsIgnoreCase("025")) {                             
+					bol.set("PROVINCE","江苏");
+					bol.set("CITY","南京");
+					bol.set("CALLOUT_TEL", TelephoneNumberUtils.getFixedPhoneNumberNoAreaCode(customerTel));       //如果客户号码的区号为 025，表示这个是南京固话,本地号码需要去掉区号，拿到真实的号码
+				}else {                                //如果号码为非南京本地号码
+					bol.set("PROVINCE","外省");
+					bol.set("CITY","外市");
+					bol.set("CALLOUT_TEL", customerTel);
+				}
+				
+			}else {                                   //不带区号的固定号码，一般表示南京本地号码
+				bol.set("PROVINCE","江苏");
+				bol.set("CITY","南京");
+				bol.set("CALLOUT_TEL", customerTel);   
+			}
+			
+		}
+		
+		bol.set("ORDER_ID", orderListVO.getOrderId());
+		bol.set("CUSTOMER_NAME", orderListVO.getCustomerName());
+		bol.set("CUSTOMER_TEL", customerTel);
+		bol.set("BRAND", Integer.valueOf(orderListVO.getBrand()));
+		bol.set("PRODUCT_NAME", Integer.valueOf(orderListVO.getProductName()));
+		bol.set("TIME_TYPE", Integer.valueOf(orderListVO.getTimeType()));
+		bol.set("CHANNEL_SOURCE", Integer.valueOf(orderListVO.getChannelSource()));
+		bol.set("CREATE_TIME", DateFormatUtils.getCurrentDate());
+		bol.set("IS_CONFIRM", Integer.valueOf(orderListVO.getIsConfirm()));
+		
+		boolean b = BSHOrderList.dao.add(bol);
+		
+		if(b) {
+			renderJson(resultMap("SUCCESS","提交订单数据成功!"));
+			System.out.println("处理订单：" + orderListVO.getOrderId() + ",提交结果: 提交订单数据成功!");
+		}else {
+			renderJson(resultMap("ERROR","提交订单数据失败!"));
+			System.out.println("处理订单：" + orderListVO.getOrderId() + ",提交结果: 提交订单数据失败!");
+		}
+	}
+	
+	/**
+	 * 获取提交的数据的 json 内容
+	 * 
+	 * @param request
+	 * @return
+	 */
+	public String getJsonContent(HttpServletRequest request) {
+		
+		String jsonContent = null;
+		
+		try {
+		
+			StringBuilder sb = new StringBuilder();
+			BufferedReader reader = request.getReader();
+			String line = null;
+			while ((line = reader.readLine()) != null) {
+				sb.append(line);
+			}
+			
+			jsonContent = sb.toString();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		return jsonContent;
+	}
+	
+	
+	//@Override
+	public void add_bak() {
 		
 		String orderId = null;
 		String customerName = null;
@@ -259,9 +426,11 @@ public class BSHOrderListController extends Controller implements IController {
 					orderList.set("PROVINCE",province);
 					orderList.set("CITY", city);
 					if(city.equalsIgnoreCase("南京")) {     //如果城市为江苏南京时，外呼号码为加一个0
-						orderList.set("CALLOUT_TEL", "0" + searchNumber);
+						//orderList.set("CALLOUT_TEL", "0" + searchNumber);
+						orderList.set("CALLOUT_TEL", searchNumber);
 					}else {
-						orderList.set("CALLOUT_TEL","00" + searchNumber);
+						//orderList.set("CALLOUT_TEL","00" + searchNumber);
+						orderList.set("CALLOUT_TEL","0" + searchNumber);
 					}
 				}else {                 //即是无法定位号码归属地，有可能是一个假的号码
 					renderJson(resultMap("ERROR","客户号码 " + customerTel + " 格式 正确，但无法定位归属地，号码异常!"));
@@ -274,11 +443,13 @@ public class BSHOrderListController extends Controller implements IController {
 				if(is025Prex) {    //如果以025开头
 					orderList.set("PROVINCE","江苏");
 					orderList.set("CITY","南京");
-					orderList.set("CALLOUT_TEL", "0" + customerTel.substring(3,customerTel.length()));    //外呼号码，需要将南京号码的区号去除，且在原号码前加0
+					//orderList.set("CALLOUT_TEL", "0" + customerTel.substring(3,customerTel.length()));    //外呼号码，需要将南京号码的区号去除，且在原号码前加0
+					orderList.set("CALLOUT_TEL", customerTel.substring(3,customerTel.length()));    //外呼号码，需要将南京号码的区号去除，且在原号码前加0
 				}else {
 					orderList.set("PROVINCE","外省");
 					orderList.set("CITY","外市");
-					orderList.set("CALLOUT_TEL", "0" + customerTel);                                      //需要在外地号码前加0，如02087878686 呼出号码为 002087878686
+					//orderList.set("CALLOUT_TEL", "0" + customerTel);                                      //需要在外地号码前加0，如02087878686 呼出号码为 002087878686
+					orderList.set("CALLOUT_TEL", customerTel);                                      //需要在外地号码前加0，如02087878686 呼出号码为 002087878686
 				}
 				
 			}
@@ -288,7 +459,8 @@ public class BSHOrderListController extends Controller implements IController {
 			if(is10Prex) {              //如果以10开头，可能会是简化的以非0开头的北京座机
 				orderList.set("PROVINCE","北京");
 				orderList.set("CITY","北京");
-				orderList.set("CALLOUT_TEL","00" + customerTel);
+				//orderList.set("CALLOUT_TEL","00" + customerTel);
+				orderList.set("CALLOUT_TEL","0" + customerTel);
 			}else {                     //如果不是以10开头，那么就可能是手机号码
 				if(customerTelLen < 11) {
 					renderJson(resultMap("ERROR","客户号码 " + customerTel + " 格式 正确，但无法定位归属地，号码异常!"));
@@ -304,9 +476,11 @@ public class BSHOrderListController extends Controller implements IController {
 					orderList.set("PROVINCE",province);
 					orderList.set("CITY", city);
 					if(city.equalsIgnoreCase("南京")) {     //如果城市为江苏南京时，外呼号码为加一个0
-						orderList.set("CALLOUT_TEL", "0" + customerTel);
+						//orderList.set("CALLOUT_TEL", "0" + customerTel);
+						orderList.set("CALLOUT_TEL", customerTel);
 					}else {
-						orderList.set("CALLOUT_TEL","00" + customerTel);
+						//orderList.set("CALLOUT_TEL","00" + customerTel);
+						orderList.set("CALLOUT_TEL","0" + customerTel);
 					}
 				}else {                 //即是无法定位号码归属地，有可能是一个假的号码
 					renderJson(resultMap("ERROR","客户号码 " + customerTel + " 格式 正确，但无法定位归属地，号码异常!"));
@@ -322,7 +496,8 @@ public class BSHOrderListController extends Controller implements IController {
 			if(customerTelLen == 8) {       //表示这个是南京本地的号码
 				orderList.set("PROVINCE","江苏");
 				orderList.set("CITY", "南京");
-				orderList.set("CALLOUT_TEL", "0" + customerTel);
+				//orderList.set("CALLOUT_TEL", "0" + customerTel);
+				orderList.set("CALLOUT_TEL", customerTel);
 			}else {  //如果长度不为8位，且长度大于8位时，该号码是带区号的没有给0的座机号
 				renderJson(resultMap("ERROR","客户号码 " + customerTel + " 格式 正确，但无法定位归属地，号码异常!"));
 				System.out.println("处理订单：" + orderId + "失败,失败原因:" + "客户号码 " + customerTel + " 格式 正确，但无法定位归属地，号码异常!");
@@ -445,10 +620,10 @@ public class BSHOrderListController extends Controller implements IController {
 		List<Record> list = BSHOrderList.dao.getBSHOrderListByCondition(orderId, channelSource, customerName, customerTel, brand, productName, state, respond,timeType, createTimeStartTime, createTimeEndTime, loadTimeStartTime, loadTimeEndTime);
 		
 		//得到数据列表，准备以 Excel 方式导出
-		//String[] headers = {"订单编号","购物平台","客户姓名","客户号码","省份","城市","外呼号码","品牌","产品名称","日期类型","计划安装日期","客户回复","按键值","创建时间","外呼结果","失败原因","已重试","外呼时间","通话时长","下次外呼时间","外呼结果JSON","接口响应"};
-		//String[] columns = {"ORDER_ID","CHANNEL_SOURCE_DESC","CUSTOMER_NAME","CUSTOMER_TEL","PROVINCE","CITY","CALLOUT_TEL","BRAND_DESC","PRODUCT_NAME_DESC","TIME_TYPE_DESC","EXPECT_INSTALL_DATE","RESPOND_DESC","VAR1","CREATE_TIME","STATE_DESC","LAST_CALL_RESULT","RETRIED","LOAD_TIME","BILLSEC","NEXT_CALLOUT_TIME","CALLRESULT_JSON","FEEDBACK_CALLRESULT_RESPOND"};
-		String[] headers = {"订单编号","购物平台","客户姓名","客户号码","省份","城市","外呼号码","品牌","产品名称","日期类型","计划安装日期","客户回复","创建时间","外呼结果","失败原因","已重试","外呼时间","通话时长","下次外呼时间","外呼结果JSON","接口响应"};
-		String[] columns = {"ORDER_ID","CHANNEL_SOURCE_DESC","CUSTOMER_NAME","CUSTOMER_TEL","PROVINCE","CITY","CALLOUT_TEL","BRAND_DESC","PRODUCT_NAME_DESC","TIME_TYPE_DESC","EXPECT_INSTALL_DATE","RESPOND_DESC","CREATE_TIME","STATE_DESC","LAST_CALL_RESULT","RETRIED","LOAD_TIME","BILLSEC","NEXT_CALLOUT_TIME","CALLRESULT_JSON","FEEDBACK_CALLRESULT_RESPOND"};
+		String[] headers = {"订单编号","购物平台","客户姓名","客户号码","省份","城市","外呼号码","品牌","产品名称","日期类型","计划安装日期","客户回复","按键值","创建时间","外呼结果","失败原因","已重试","外呼时间","通话时长","下次外呼时间","外呼结果JSON","接口响应"};
+		String[] columns = {"ORDER_ID","CHANNEL_SOURCE_DESC","CUSTOMER_NAME","CUSTOMER_TEL","PROVINCE","CITY","CALLOUT_TEL","BRAND_DESC","PRODUCT_NAME_DESC","TIME_TYPE_DESC","EXPECT_INSTALL_DATE","RESPOND_DESC","VAR1","CREATE_TIME","STATE_DESC","LAST_CALL_RESULT","RETRIED","LOAD_TIME","BILLSEC","NEXT_CALLOUT_TIME","CALLRESULT_JSON","FEEDBACK_CALLRESULT_RESPOND"};
+		//String[] headers = {"订单编号","购物平台","客户姓名","客户号码","省份","城市","外呼号码","品牌","产品名称","日期类型","计划安装日期","客户回复","创建时间","外呼结果","失败原因","已重试","外呼时间","通话时长","下次外呼时间","外呼结果JSON","接口响应"};
+		//String[] columns = {"ORDER_ID","CHANNEL_SOURCE_DESC","CUSTOMER_NAME","CUSTOMER_TEL","PROVINCE","CITY","CALLOUT_TEL","BRAND_DESC","PRODUCT_NAME_DESC","TIME_TYPE_DESC","EXPECT_INSTALL_DATE","RESPOND_DESC","CREATE_TIME","STATE_DESC","LAST_CALL_RESULT","RETRIED","LOAD_TIME","BILLSEC","NEXT_CALLOUT_TIME","CALLRESULT_JSON","FEEDBACK_CALLRESULT_RESPOND"};
 		String fileName = "时间区间:" + startTime + " 至 " + endTime + " .xls";
 		String sheetName = "订单信息列表";
 		int cellWidth = 200;

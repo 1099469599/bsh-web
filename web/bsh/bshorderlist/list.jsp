@@ -3,7 +3,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE8" content="ie=edge"/>
 <title>博世订单信息</title>
 	<link rel="stylesheet" type="text/css" href="themes/default/easyui.css">
 	<link rel="stylesheet" type="text/css" href="themes/color.css">
@@ -91,6 +90,7 @@
     			fit:true,
     			rowrap:true,
     			striped:true,
+    			singleSelect:true,
     			pageList:[10,20,30],
     			url:'bshOrderList/datagrid',
     			toolbar:'#orderListDgTool',
@@ -101,6 +101,7 @@
     				customerTel:$('#customerTel').textbox('getValue'),
     				brand:$('#brand').combobox('getValue'),
     				productName:$('#productName').combobox('getValue'),
+    				isConfirm:$("#isConfirm").combobox('getValue'),
     				state:$('#state').combobox('getValue'),
     				respond:$('#respond').combobox('getValue'),
     				timeType:$('#timeType').combobox('getValue'),
@@ -130,6 +131,7 @@
 				customerTel:$("#customerTel").textbox('getValue'),
 				brand:$('#brand').combobox('getValue'),
 				productName:$("#productName").combobox('getValue'),
+				isConfirm:$("#isConfirm").combobox('getValue'),
 				state:$("#state").combobox('getValue'),
 				respond:$('#respond').combobox('getValue'),
 				timeType:$('#timeType').combobox('getValue'),
@@ -168,6 +170,16 @@
     			return "<span>" + data.RESPOND_DESC + "</span>";
     		}
     		
+    	}
+    	
+    	//设置前轩流程标识符的颜色
+    	function isConfirmFormatter(value,data,index) {
+    		isConfirm = data.IS_CONFIRM;
+    		if(isConfirm==1) {       //有前置流程
+    			return "<span style='color:#ff0000'>" + data.IS_CONFIRM_DESC + "</span>";
+    		}else {
+    			return "<span>" + data.IS_CONFIRM_DESC + "</span>";
+    		}
     	}
     	
     	function orderListExport() {
@@ -232,6 +244,14 @@
 						产品名称：<select class="easyui-combobox" id="productName" name="productName" style="width:200px;"></select>
 					</span>
 					<span style="padding-left:20px;">
+						前置流程：
+						<select class="easyui-combobox" id="isConfirm" name="isConfirm" style="width:196px;">
+							<option value="empty">请选择</option>
+							<option value="1">有</option>
+							<option value="2">无</option>
+						</select>
+					</span>
+					<span style="padding-left:20px;">
 						外呼状态：<select class="easyui-combobox" id="state" name="state" style="width:200px;"></select>
 					</span>
 					<span style="padding-left:20px;">
@@ -282,10 +302,11 @@
 					<th data-options="field:'PRODUCT_NAME_DESC',width:100,align:'center'">产品名称</th>
 					<th data-options="field:'TIME_TYPE_DESC',width:100,align:'center'">日期类型</th>
 					<th data-options="field:'EXPECT_INSTALL_DATE',width:100,align:'center'">计划安装日期</th>
+					<th data-options="field:'IS_CONFIRM_DESC',width:100,align:'center',formatter:isConfirmFormatter">前置流程</th>
 					<th data-options="field:'RESPOND_DESC',width:120,align:'center',formatter:respondformatter">客户回复</th>
-					<!-- 
+					
 					<th data-options="field:'VAR1',width:100,align:'center'">按键值</th>
-					 -->
+					
 					<th data-options="field:'CREATE_TIME',width:170,align:'center'">创建时间</th>
 					<th data-options="field:'STATE_DESC',width:100,align:'center',formatter:stateformatter">外呼结果</th>
 					<th data-options="field:'LAST_CALL_RESULT',width:180,align:'center'">失败原因</th>

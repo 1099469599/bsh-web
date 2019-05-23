@@ -38,11 +38,13 @@ public class HttpRequestUtils {
 	 * 			语音性别
 	 * @param tok
 	 * 			验证码标识符
+	 * @param aue
+	 * 			语音文件格式：3为mp3格式(默认)； 4为pcm-16k；5为pcm-8k；6为wav（内容同pcm-16k）;
 	 * @param tex
 	 * 			TTS内容
 	 * @return
 	 */
-	public static InputStream httpRequestForTTS(String lan,String cuid,String ctp,String spd,String vol,String per,String tok,String tex) {
+	public static InputStream httpRequestForTTS(String lan,String cuid,String ctp,String spd,String vol,String per,String tok,String aue,String tex) {
 		
 		//String execTtsUrl = MemoryVariableUtil.ttsParamMap.get("exec_tts_url");   //执行TTS转换的URL
 		String execTtsUrl = "http://tsn.baidu.com";   //执行TTS转换的URL
@@ -51,8 +53,8 @@ public class HttpRequestUtils {
 		
 		HttpClient httpClient = new HttpClient();
 		
-		HttpMethod method = new GetMethod(execTtsUrl + "/text2audio?lan=" + lan + "&cuid=" + cuid + "&ctp=" + ctp + "&spd=" + spd + "&vol=" + vol + "&per=" + per + "&tok=" + tok + "&tex=" + tex);
-		System.out.println("URL地址：" + execTtsUrl + "/text2audio?lan=" + lan + "&cuid=" + cuid + "&ctp=" + ctp + "&spd=" + spd + "&vol=" + vol + "&per=" + per + "&tok=" + tok + "&tex=" + tex);
+		HttpMethod method = new GetMethod(execTtsUrl + "/text2audio?lan=" + lan + "&cuid=" + cuid + "&ctp=" + ctp + "&spd=" + spd + "&vol=" + vol + "&per=" + per + "&tok=" + tok  + "&aue=" + aue + "&tex=" + tex);
+		System.out.println("URL地址：" + execTtsUrl + "/text2audio?lan=" + lan + "&cuid=" + cuid + "&ctp=" + ctp + "&spd=" + spd + "&vol=" + vol + "&per=" + per + "&tok=" + tok  + "&aue=" + aue + "&tex=" + tex);
 		try {
 			httpClient.executeMethod(method);
 		

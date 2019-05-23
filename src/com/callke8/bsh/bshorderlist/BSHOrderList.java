@@ -42,6 +42,7 @@ public class BSHOrderList extends Model<BSHOrderList> {
 	 * @param customerTel
 	 * @param brand
 	 * @param productName
+	 * @param isConfirm
 	 * @param state
 	 * @param respond
 	 * @param timeType
@@ -55,7 +56,7 @@ public class BSHOrderList extends Model<BSHOrderList> {
 	 * 					外呼时间的结束时间
 	 * @return
 	 */
-	public Page getBSHOrderListByPaginate(int pageNumber,int pageSize,String orderId,String channelSource,String customerName,String customerTel,String brand,String productName,String state,String respond,String timeType,String createTimeStartTime,String createTimeEndTime,String loadTimeStartTime,String loadTimeEndTime) {
+	public Page getBSHOrderListByPaginate(int pageNumber,int pageSize,String orderId,String channelSource,String customerName,String customerTel,String brand,String productName,String isConfirm,String state,String respond,String timeType,String createTimeStartTime,String createTimeEndTime,String loadTimeStartTime,String loadTimeEndTime) {
 		
 		StringBuilder sb = new StringBuilder();
 		Object[] pars = new Object[20];
@@ -102,6 +103,13 @@ public class BSHOrderList extends Model<BSHOrderList> {
 		if(!BlankUtils.isBlank(productName) && !productName.equalsIgnoreCase("empty")) {
 			sb.append(" and PRODUCT_NAME=?");
 			pars[index] = productName;
+			index++;
+		}
+		
+		//是否带前置流程
+		if(!BlankUtils.isBlank(isConfirm) && !isConfirm.equalsIgnoreCase("empty")) {
+			sb.append(" and IS_CONFIRM=?");
+			pars[index] = isConfirm;
 			index++;
 		}
 		
@@ -171,6 +179,7 @@ public class BSHOrderList extends Model<BSHOrderList> {
 	 * @param customerTel
 	 * @param brand
 	 * @param productName
+	 * @param isConfirm
 	 * @param state
 	 * @param respond
 	 * @param createTimeStartTime
@@ -183,9 +192,9 @@ public class BSHOrderList extends Model<BSHOrderList> {
 	 * 					外呼时间的结束时间
 	 * @return
 	 */
-	public Map getBSHOrderListByPaginateToMap(int pageNumber,int pageSize,String orderId,String channelSource,String customerName,String customerTel,String brand,String productName,String state,String respond,String timeType,String createTimeStartTime,String createTimeEndTime,String loadTimeStartTime,String loadTimeEndTime) {
+	public Map getBSHOrderListByPaginateToMap(int pageNumber,int pageSize,String orderId,String channelSource,String customerName,String customerTel,String brand,String productName,String isConfirm,String state,String respond,String timeType,String createTimeStartTime,String createTimeEndTime,String loadTimeStartTime,String loadTimeEndTime) {
 		
-		Page<Record> p = getBSHOrderListByPaginate(pageNumber, pageSize, orderId,channelSource,customerName, customerTel,brand,productName,state,respond,timeType,createTimeStartTime, createTimeEndTime,loadTimeStartTime,loadTimeEndTime);
+		Page<Record> p = getBSHOrderListByPaginate(pageNumber, pageSize, orderId,channelSource,customerName, customerTel,brand,productName,isConfirm,state,respond,timeType,createTimeStartTime, createTimeEndTime,loadTimeStartTime,loadTimeEndTime);
 		
 		int total = p.getTotalRow();    //获取查询出来的总数量
 		
@@ -216,6 +225,10 @@ public class BSHOrderList extends Model<BSHOrderList> {
 			//货物描述
 			int productNameResult = r.getInt("PRODUCT_NAME");
 			r.set("PRODUCT_NAME_DESC", MemoryVariableUtil.getDictName("BSH_PRODUCT_NAME", String.valueOf(productNameResult)));
+			
+			//是否带前置流程
+			int isConfirmResult = r.getInt("IS_CONFIRM");
+			r.set("IS_CONFIRM_DESC", isConfirmResult==1?"有":"无");
 			
 			r.set("RETRIED", r.getInt("RETRIED") + "/" + BSHCallParamConfig.getRetryTimes());
 			
@@ -253,6 +266,7 @@ public class BSHOrderList extends Model<BSHOrderList> {
 		nr.set("CITY", bshOrderList.get("CITY"));
 		nr.set("CALLOUT_TEL", bshOrderList.get("CALLOUT_TEL"));
 		nr.set("STATE", bshOrderList.get("STATE"));
+		nr.set("IS_CONFIRM", bshOrderList.getInt("IS_CONFIRM"));
 		
 		return add(nr);
 	}
@@ -859,6 +873,8 @@ public class BSHOrderList extends Model<BSHOrderList> {
 		data.set("respond3Data", 0);
 		data.set("respond4Data", 0);
 		data.set("respond5Data", 0);
+		data.set("respond9Data", 0);
+		data.set("respond10Data", 0);
 		
 		//(1)取得统计数据（呼叫状态）
 		getStatisticsDataForState(data,startTime,endTime,channelSource);
@@ -990,6 +1006,10 @@ public class BSHOrderList extends Model<BSHOrderList> {
 					data.set("respond4Data", respondCount);
 				}else if(respondValue == 5) {
 					data.set("respond5Data", respondCount);
+				}else if(respondValue == 9) {
+					data.set("respond9Data", respondCount);
+				}else if(respondValue == 10) {
+					data.set("respond10Data", respondCount);
 				}
 			}
 		}

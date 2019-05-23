@@ -21,9 +21,9 @@ import com.callke8.utils.DateFormatUtils;
 import com.callke8.utils.StringUtil;
 import com.jfinal.plugin.activerecord.Record;
 
-public class BSHCallFlowAgi extends BaseAgiScript {
+public class BSHCallFlowAgi_bak20190522 extends BaseAgiScript {
 
-	private Log log = LogFactory.getLog(BSHCallFlowAgi.class);
+	private Log log = LogFactory.getLog(BSHCallFlowAgi_bak20190522.class);
 	
 	@Override
 	public void service(AgiRequest request, AgiChannel channel) {
@@ -51,7 +51,7 @@ public class BSHCallFlowAgi extends BaseAgiScript {
 			BSHOrderList bshOrderList = BSHOrderList.dao.getBSHOrderListById(bshOrderListId);
 			//System.out.println("取出的订单信息为---=========：" + bshOrderList);
 			exec("Noop","AGI流程得到的订单ID为：" + bshOrderListId + ",订单详情：" + bshOrderList);
-			//StringUtil.writeString("/opt/dial-log.log",DateFormatUtils.getCurrentDate() + ",FastAGI11111(流程执行)：" + bshOrderList.getStr("CUSTOMER_TEL") + ",通道标识:" + channel.getName(), true);
+			StringUtil.writeString("/opt/dial-log.log",DateFormatUtils.getCurrentDate() + ",FastAGI11111(流程执行)：" + bshOrderList.getStr("CUSTOMER_TEL") + ",通道标识:" + channel.getName(), true);
 			
 			/**
 			 * 2018-09-06 强行加入逻辑，用于处理，提交上来的订单，如果平台渠道为非国美平台，但是日期类型却又是送货日期时，需要强行将送货日期改为安装日期
@@ -63,42 +63,6 @@ public class BSHCallFlowAgi extends BaseAgiScript {
 					bshOrderList.set("TIME_TYPE", 1);
 				}
 			}
-			
-			//20190522新增加,主要是用于判断是否带有前置流程
-			int productNameValue = bshOrderList.getInt("PRODUCT_NAME");    //取出产品类目
-			int isConfirm = bshOrderList.getInt("IS_CONFIRM");             //取出是否带有前置流程，1：带前置流程；2：不带前置流程
-			if(isConfirm == 1) {    //如果 isConfirm 为1，就表示带有前置流程
-				//即使这里标识带有前置流程，也要直接执行，还要再判断产品类目是否为： 6（灶具）或 8（洗碗机），只有这两个类目，才需要进入前置流程
-				if(productNameValue==6 || productNameValue==8) {   
-					
-					exec("Noop","客户 " + bshOrderList.getStr("CUSTOMER_TEL") + ",正准备执行前置流程...");
-					StringUtil.log(this, "客户 " + bshOrderList.getStr("CUSTOMER_TEL") + ",正准备执行前置流程...");
-					
-					//进入前置流程执行
-					String prefixCallFlowRespond = execPrefixCallFlow(bshOrderList,channel);     //执行前置流程，并返回客户回复按键
-					if(!prefixCallFlowRespond.equals("1")) {     //如果客户回复的按键不为1，则表示安装环境不具备,需要提前返回该通话，并将客户外呼结果为成功，客户回复状态为10，即是环境不具备
-						
-						//如果客户返回的按键为2，即是环境不具备时，不再往下执行。
-						//在返回之前，保存外呼的结果
-						BSHOrderList.dao.updateBSHOrderListRespondAndBillsec(bshOrderList.get("ID").toString(), "10", Integer.valueOf(channel.getVariable("CDR(billsec)")), prefixCallFlowRespond);
-						
-						//需要将客户回复结果返回给BSH服务器
-						//同时，将呼叫成功结果反馈给 BSH 服务器
-						BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "1", String.valueOf(10));
-						Thread httpRequestThread = new Thread(httpRequestT);
-						httpRequestThread.start();
-						
-						//无论是否回复什么结果，或是没有回复结果,在这里表示外呼已经结束，需要将活跃通道减掉一个
-						if(BSHPredial.activeChannelCount > 0) {        
-							BSHPredial.activeChannelCount--;
-						}
-						
-						return;
-					}
-				}
-			}
-			
-			//20190522新增加结束
 			
 			//playList = getPlayList(bshOrderList);     //组织播放开始语音
 			String readVoiceFileList = getReadVoiceFileToString(bshOrderList);   //Read应用所需语音文件
@@ -128,75 +92,6 @@ public class BSHCallFlowAgi extends BaseAgiScript {
 		
 	}
 	
-	/**
-	 * 执行前置流程
-	 * 
-	 * @param bshOrderList
-	 * 				传入的订单数据
-	 */
-	public String execPrefixCallFlow(BSHOrderList bshOrderList,AgiChannel channel) {
-		
-		String prefixCallFlowRespond = "";
-		
-		try {
-			String voicePath = BSHCallParamConfig.getVoicePathSingle();   //取出配置的语音文件（单声道）路径
-			
-			//根据订单信息，查询前置流程的开场语音
-			String prefixCallFlowReadVoiceFile = getPrefixCallFlowReadVoiceFileToString(bshOrderList); 
-			
-			//返回前置流程执行时，如果客户回复了2，即表示环境不具备，需要播放指定的语音文件，在这里先查询出来
-			String prefixCallFLowRespond2VoiceFile = getPrefixCallFlowRespond2VoiceFile(bshOrderList);
-			
-			exec("Read","prefixCallFlowRespond," + prefixCallFlowReadVoiceFile + ",1,,1,8");
-			
-			//取得客户回复结果
-			prefixCallFlowRespond = channel.getVariable("prefixCallFlowRespond");
-			StringUtil.log(BSHCallFlowAgi.class, "客户 " + bshOrderList.get("CUSTOMER_TEL") + " 在前置流程,第1次回复输入：" + prefixCallFlowRespond);
-			//如果第一次回复为空，或是不为1 或 2 时，再播放一次
-			if(BlankUtils.isBlank(prefixCallFlowRespond) || !(prefixCallFlowRespond.equalsIgnoreCase("1") || prefixCallFlowRespond.equalsIgnoreCase("2"))) {
-				
-				//if(!BlankUtils.isBlank(prefixCallFlowRespond)) {    //如果客户回复不为空，但是按键又不为  1，2，3，4 时
-				String inputErrorVoice = voicePath + "/" + BSHVoiceConfig.getVoiceMap().get("response_error_for_first_time");
-				exec("PlayBack",inputErrorVoice);         //提示输入有误
-				//}
-				
-				//进入第二次
-				exec("Read","prefixCallFlowRespond," + prefixCallFlowReadVoiceFile + ",1,,1,8");
-				prefixCallFlowRespond = channel.getVariable("prefixCallFlowRespond");
-				StringUtil.log(BSHCallFlowAgi.class, "客户 " + bshOrderList.get("CUSTOMER_TEL") + " 在前置流程,第2次回复输入：" + prefixCallFlowRespond);
-			}
-			
-			//如果两次客户都没有输入，或是输入不为1，则强制设置为输入2
-			//if(BlankUtils.isBlank(prefixCallFlowRespond) || !prefixCallFlowRespond.equals("1")) {
-			//	prefixCallFlowRespond = "2";
-			//}
-			
-			if(prefixCallFlowRespond.equals("1")) {        //如果客户输入1，系统将进入下一个流程
-				exec("Noop","客户 " + bshOrderList.get("CUSTOMER_TEL") + " 执行前置流程，客户回复了1，表示安装环境已具备！");
-				//暂不做任何操作
-				//理论上需要播放如下提示：安装环境已具备，系统将进入安装日期确认流程，请稍候...
-			}else {										   //如果客户输入2，系统将结束通话，不再进入下一个流程
-				
-				/**
-				 * 客户环境不具备时，主要包括以下两条语音内容：
-				 * 		回复2语音:（灶具类目前置流程回复2）
-				 * 			prefix_productName_6_repond_2：
-				 * 				为了避免漏气，安装灶具时必须要做漏气检测，通常要先开通气源，再上门安装。灶具面板上有一个二维码，气源开通后，请您扫码预约安装服务，非常抱歉给您带去不便，感谢您的配合，再见。
-				 * 		回复2语音:（洗碗机类目前置流程回复2 ）
-				 * 			prefix_productName_8_repond_2：
-				 * 				为了一次上门就能装好，需要您准备好门板之后再预约安装，洗碗机门体内侧有一个二维码，请您扫码预约安装服务，还可以方便的获取使用指南，非常抱歉给您带去不便，感谢您的配合，再见
-				 */
-				exec("Noop","客户 " + bshOrderList.get("CUSTOMER_TEL") + " 执行前置流程，客户无回复、错误回复或回复按键2，表示安装环境不具备,将不再执行安装确认流程！");
-				exec("PlayBack",prefixCallFLowRespond2VoiceFile);    
-			}
-		
-		} catch (AgiException e) {
-			e.printStackTrace();
-		}
-		
-		return prefixCallFlowRespond;
-	}
-	
 	public void execRead(String readVoiceFileList,List<Record> respond1PlayList,List<Record> respond2PlayList,List<Record> respond3PlayList,List<Record> respond4PlayList,List<Record> respondErrorPlayList,BSHOrderList bshOrderList,AgiChannel channel) {
 		
 		try {
@@ -206,7 +101,7 @@ public class BSHCallFlowAgi extends BaseAgiScript {
 			exec("Read","respond," + readVoiceFileList + ",1,,1,8");
 			
 			String respond = channel.getVariable("respond");     //取得回复结果
-			StringUtil.log(BSHCallFlowAgi.class, "客户 " + bshOrderList.get("CUSTOMER_TEL") + " 第1次回复输入：" + respond);
+			StringUtil.log(BSHCallFlowAgi_bak20190522.class, "客户 " + bshOrderList.get("CUSTOMER_TEL") + " 第1次回复输入：" + respond);
 			
 			//一共要求两次，如果客户第一次回复为空或是错误回复时，再执行一次。
 			if(BlankUtils.isBlank(respond) || !(respond.equalsIgnoreCase("1") || respond.equalsIgnoreCase("2") || respond.equalsIgnoreCase("3") || respond.equalsIgnoreCase("4"))) {
@@ -218,7 +113,7 @@ public class BSHCallFlowAgi extends BaseAgiScript {
 				
 				exec("Read","respond," + readVoiceFileList + ",1,,1,8");
 				respond = channel.getVariable("respond");     //再次取得回复结果
-				StringUtil.log(BSHCallFlowAgi.class, "客户 " + bshOrderList.get("CUSTOMER_TEL") + " 第2次回复输入：" + respond);
+				StringUtil.log(BSHCallFlowAgi_bak20190522.class, "客户 " + bshOrderList.get("CUSTOMER_TEL") + " 第2次回复输入：" + respond);
 			}
 			
 			String keyValue = null;    //按键值
@@ -265,7 +160,7 @@ public class BSHCallFlowAgi extends BaseAgiScript {
 				
 			}else {
 				exec("Noop","客户" + bshOrderList.get("CUSTOMER_TEL") + "无回复任何");
-				respond = "9";
+				respond = "5";
 				
 				execPlayBack(respondErrorPlayList);     //回复后，还需要将结果播放回去
 			}
@@ -400,71 +295,6 @@ public class BSHCallFlowAgi extends BaseAgiScript {
 	}
 	
 	/**
-	 * 取得前置流程 开场语音 Read 命令所需语音文件名字符串
-	 * 
-	 * 前置流程Read，主要包括以下两组语音内容：
-	 * 			开场1：（灶具的前置流程）
-	 * 				prefix_1_brand_0_productName_6：
-	 * 					 您好，这里是西门子家电客服中心，来电跟您确认灶具的安装服务，请问您家里的气源开通了吗？已经开通请按1;还没有开通或者不清楚，请按2。
-	 * 				prefix_1_brand_1_productName_6
-	 * 					 您好，这里是博世家电客服中心，来电跟您确认灶具的安装服务，请问您家里的气源开通了吗？已经开通请按1;还没有开通或者不清楚，请按2。
-	 * 
-	 * 			开场2:（洗碗机的前置流程）
-	 * 				prefix_1_brand_0_productName_8：
-	 * 					您好，这里是西门子家电客服中心，来电跟您确认洗碗机的安装服务，上门安装时，需要把橱柜门板装到洗碗机上，请问这块门板准备好了吗？已经准备好了请按1;还没有准备好或者不清楚，请按2.
-	 * 				prefix_1_brand_1_productName_8：
-	 * 					您好，这里是博世家电客服中心，来电跟您确认洗碗机的安装服务，上门安装时，需要把橱柜门板装到洗碗机上，请问这块门板准备好了吗？已经准备好了请按1;还没有准备好或者不清楚，请按2.
-	 * 
-	 * @param bshOrderList
-	 * @return
-	 */
-	public String getPrefixCallFlowReadVoiceFileToString(BSHOrderList bshOrderList) {
-		
-		String voicePath = BSHCallParamConfig.getVoicePathSingle();   //取出配置的语音文件（单声道）路径
-		String voiceFile = null;
-		
-		int brand = bshOrderList.getInt("BRAND");                            //品牌，0：西门子；1：博世
-		int productName = bshOrderList.getInt("PRODUCT_NAME");               //产品名称
-		
-		String voiceNameForPrefixCallFlow = "prefix_1_brand_" + brand + "_productName_" + productName;
-		if(BSHVoiceConfig.getVoiceMap().containsKey(voiceNameForPrefixCallFlow)) {
-			voiceFile = voicePath + "/" + BSHVoiceConfig.getVoiceMap().get(voiceNameForPrefixCallFlow);
-		}
-		
-		return voiceFile;
-	}
-	
-	/**
-	 * 执行了前置流程的 read 应用问询后，如果客户回复了1，则表示环境具备
-	 * 如果回复了2或是其他的按键，则表示环境不具备，需要播放环境不具备对应的语音文件
-	 * 
-	 * 客户环境不具备时，主要包括以下两条语音内容：
-	 * 		回复2语音:（灶具类目前置流程回复2）
-	 * 			prefix_productName_6_repond_2：
-	 * 				为了避免漏气，安装灶具时必须要做漏气检测，通常要先开通气源，再上门安装。灶具面板上有一个二维码，气源开通后，请您扫码预约安装服务，非常抱歉给您带去不便，感谢您的配合，再见。
-	 * 		回复2语音:（洗碗机类目前置流程回复2 ）
-	 * 			prefix_productName_8_repond_2：
-	 * 				为了一次上门就能装好，需要您准备好门板之后再预约安装，洗碗机门体内侧有一个二维码，请您扫码预约安装服务，还可以方便的获取使用指南，非常抱歉给您带去不便，感谢您的配合，再见。
-	 * 
-	 * @param bshOrderList
-	 * @return
-	 */
-	public String getPrefixCallFlowRespond2VoiceFile(BSHOrderList bshOrderList) {
-		
-		String voicePath = BSHCallParamConfig.getVoicePathSingle();   //取出配置的语音文件（单声道）路径
-		String voiceFile = null;
-		
-		int productName = bshOrderList.getInt("PRODUCT_NAME");               //产品名称
-		
-		String voiceNameForPrefixCallFlowRespond2 = "prefix_productName_" + productName + "_respond_2";
-		if(BSHVoiceConfig.getVoiceMap().containsKey(voiceNameForPrefixCallFlowRespond2)) {
-			voiceFile = voicePath + "/" + BSHVoiceConfig.getVoiceMap().get(voiceNameForPrefixCallFlowRespond2);
-		}
-		
-		return voiceFile;
-	}
-	
-	/**
 	 * 取得 Read 命令所需语音文件名字符串
 	 * 一次性取得多个文件，形成完整的调查语音
 	 * 
@@ -513,68 +343,58 @@ public class BSHCallFlowAgi extends BaseAgiScript {
 		int timeType = bshOrderList.getInt("TIME_TYPE");                     //日期类型，1：安装日期；2：送货日期
 		int productName = bshOrderList.getInt("PRODUCT_NAME");               //产品名称
 		
-		int isConfirm = bshOrderList.getInt("IS_CONFIRM");
-		if(isConfirm == 1 && (productName==6 || productName==8)) {    //如果 isConfirm 为1，就表示带有前置流程
-			//如果客户执行到这里，表示环境具备，不需要再加入前面的
-			//您好，这里是(西门子/博世)家电客服中心，来电跟您确认(洗衣机/XXX)的安装日期。根据(京东/苏宁/国美/天猫)平台传来的信息，我们将于(明天/12月10号)上门安装。确认请按1，暂不安装请按2，如需改约到后面3天，请按3,如果您已经提前预约好服务，请按4。 
-			//中的 您好，这里是(西门子/博世)家电客服中心，来电跟您确认(洗衣机/XXX)的安装日期。
-			//和 您好，这里是(西门子/博世)家电客服中心。您在国美选购的(洗衣机/XXX)将于(明天/12月10号)送货，我们将于送货当天上门安装，需要您进一步确认。确认送货当天安装请按1，暂不安装请按2，如需改约到后面3天请按3,如果您已经提前预约好服务,请按4。
-			//中的 您好，这里是(西门子/博世)家电客服中心。
-		}else {
+		/** 一、组织第一条语音
+		  begin_1_brand_0_timeType_1：您好，这里是西门子家电客服中心，来电跟您确认
+          begin_1_brand_1_timeType_1：您好，这里是博世家电客服中心，来电跟您确认
+          begin_1_brand_0_timeType_2：您好，这里是西门子家电客服中心
+          begin_1_brand_1_timeType_2：您好，这里是博世家电客服中心
+		 */
+		String voiceNameFor1 = "begin_1_brand_" + brand + "_timeType_" + timeType;
+		if(BSHVoiceConfig.getVoiceMap().containsKey(voiceNameFor1)) {
+			sb.append(voicePath + "/" + BSHVoiceConfig.getVoiceMap().get(voiceNameFor1));
+		}
 		
-				/** 一、组织第一条语音
-				  begin_1_brand_0_timeType_1：您好，这里是西门子家电客服中心，来电跟您确认
-		          begin_1_brand_1_timeType_1：您好，这里是博世家电客服中心，来电跟您确认
-		          begin_1_brand_0_timeType_2：您好，这里是西门子家电客服中心
-		          begin_1_brand_1_timeType_2：您好，这里是博世家电客服中心
-				 */
-				String voiceNameFor1 = "begin_1_brand_" + brand + "_timeType_" + timeType;
-				if(BSHVoiceConfig.getVoiceMap().containsKey(voiceNameFor1)) {
-					sb.append(voicePath + "/" + BSHVoiceConfig.getVoiceMap().get(voiceNameFor1));
-				}
-				
-				/**
-				 * 二、再根据日期类型,决定直接报产品名称，还是报：您在国美选购的
-				 */
-				if(timeType==1) {      //表示安装日期，需要直接报出产品的名称
-					/**
-					 * 整句即是：
-					 * produceName_*:洗衣机   
-					 * begin_2_timeType_1：的安装日期
-					 */
-					String voiceNameForProductName = "productName_" + productName;
-					if(BSHVoiceConfig.getVoiceMap().containsKey(voiceNameForProductName)) {
-						sb.append("&");
-						sb.append(voicePath + "/" + BSHVoiceConfig.getVoiceMap().get(voiceNameForProductName));
-					}
-					//紧接着第二条语音: 的安装日期
-					String voiceNameFor2 = "begin_2_timeType_1";
-					if(BSHVoiceConfig.getVoiceMap().containsKey(voiceNameFor2)) {
-						sb.append("&");
-						sb.append(voicePath + "/" + BSHVoiceConfig.getVoiceMap().get(voiceNameFor2));
-					}
-					
-				}else {              //如果日期类型为送货日期，则需要先报出： 您在国美选购的
-					/**
-					 * 整句为：
-					 * begin_2_timeType_2：您在国美选购的
-					 * productName_*:  洗衣机
-					 */
-					//先紧接着第二条语音: 您在国美选购的
-					String voiceNameFor2 = "begin_2_timeType_2";
-					if(BSHVoiceConfig.getVoiceMap().containsKey(voiceNameFor2)) {
-						sb.append("&");
-						sb.append(voicePath + "/" + BSHVoiceConfig.getVoiceMap().get(voiceNameFor2));
-					}
-					
-					//产品语音播报
-					String voiceNameForProductName = "productName_" + productName;
-					if(BSHVoiceConfig.getVoiceMap().containsKey(voiceNameForProductName)) {
-						sb.append("&");
-						sb.append(voicePath + "/" + BSHVoiceConfig.getVoiceMap().get(voiceNameForProductName));
-					}
-					
-				}
+		/**
+		 * 二、再根据日期类型,决定直接报产品名称，还是报：您在国美选购的
+		 */
+		if(timeType==1) {      //表示安装日期，需要直接报出产品的名称
+			/**
+			 * 整句即是：
+			 * produceName_*:洗衣机   
+			 * begin_2_timeType_1：的安装日期
+			 */
+			String voiceNameForProductName = "productName_" + productName;
+			if(BSHVoiceConfig.getVoiceMap().containsKey(voiceNameForProductName)) {
+				sb.append("&");
+				sb.append(voicePath + "/" + BSHVoiceConfig.getVoiceMap().get(voiceNameForProductName));
+			}
+			//紧接着第二条语音: 的安装日期
+			String voiceNameFor2 = "begin_2_timeType_1";
+			if(BSHVoiceConfig.getVoiceMap().containsKey(voiceNameFor2)) {
+				sb.append("&");
+				sb.append(voicePath + "/" + BSHVoiceConfig.getVoiceMap().get(voiceNameFor2));
+			}
+			
+		}else {              //如果日期类型为送货日期，则需要先报出： 您在国美选购的
+			/**
+			 * 整句为：
+			 * begin_2_timeType_2：您在国美选购的
+			 * productName_*:  洗衣机
+			 */
+			//先紧接着第二条语音: 您在国美选购的
+			String voiceNameFor2 = "begin_2_timeType_2";
+			if(BSHVoiceConfig.getVoiceMap().containsKey(voiceNameFor2)) {
+				sb.append("&");
+				sb.append(voicePath + "/" + BSHVoiceConfig.getVoiceMap().get(voiceNameFor2));
+			}
+			
+			//产品语音播报
+			String voiceNameForProductName = "productName_" + productName;
+			if(BSHVoiceConfig.getVoiceMap().containsKey(voiceNameForProductName)) {
+				sb.append("&");
+				sb.append(voicePath + "/" + BSHVoiceConfig.getVoiceMap().get(voiceNameForProductName));
+			}
+			
 		}
 		
 		/**
