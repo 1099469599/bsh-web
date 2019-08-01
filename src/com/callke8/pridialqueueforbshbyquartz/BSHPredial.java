@@ -218,8 +218,19 @@ public class BSHPredial {
 			BSHOrderList.dao.updateBSHOrderListStateToRetry(bshOrderList.getInt("ID"), "3", BSHCallParamConfig.getRetryInterval(), lastCallResult);
 		}else {
 			
+			//在返回外呼结果给DOB服务器时，还需要加入一个前置流程的外呼结果
+			//前置外呼结果，0：没有前置; 1：确认; 2：不确认; 3：未接听;
+			//由于这里外呼失败，所以前置外呼结果只能是： 0 （没有前置）或是3（未接听）
+			String preCallResult = "0";
+			int isConfirm = bshOrderList.getInt("IS_CONFIRM");
+			int productName = bshOrderList.getInt("PRODUCT_NAME");
+			if(isConfirm==1 && (productName==6 || productName==8)) {
+				//如果 isConfirm==1 且 产品类目为 6（灶具）或是 8（洗碗机）时，表示有前置流程
+				preCallResult = "3";
+			}
+			
 			//两次都失败同时，将这个未接听的结果反馈给BSH服务器
-			BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "0", "8");
+			BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "0",preCallResult,"8");
 			Thread httpRequestThread = new Thread(httpRequestT);
 			httpRequestThread.start();
 			
@@ -248,8 +259,19 @@ public class BSHPredial {
 			BSHOrderList.dao.updateBSHOrderListStateToRetry(bshOrderList.getInt("ID"), "3", BSHCallParamConfig.getRetryInterval(), lastCallResult);
 		}else {
 			
+			//在返回外呼结果给DOB服务器时，还需要加入一个前置流程的外呼结果
+			//前置外呼结果，0：没有前置; 1：确认; 2：不确认; 3：未接听;
+			//由于这里外呼失败，所以前置外呼结果只能是： 0 （没有前置）或是3（未接听）
+			String preCallResult = "0";
+			int isConfirm = bshOrderList.getInt("IS_CONFIRM");
+			int productName = bshOrderList.getInt("PRODUCT_NAME");
+			if(isConfirm==1 && (productName==6 || productName==8)) {
+				//如果 isConfirm==1 且 产品类目为 6（灶具）或是 8（洗碗机）时，表示有前置流程
+				preCallResult = "3";
+			}
+			
 			//两次都失败同时，将这个未接听的结果反馈给BSH服务器
-			BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "0", "8");
+			BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "0",preCallResult,"8");
 			Thread httpRequestThread = new Thread(httpRequestT);
 			httpRequestThread.start();
 			
@@ -292,7 +314,18 @@ public class BSHPredial {
 		//强制修改呼叫结果为2，即是已成功
 		BSHOrderList.dao.updateBSHOrderListState(bshOrderList.getInt("ID"), null,"2", lastCallResult);
 		//同时，将呼叫成功结果反馈给 BSH 服务器
-		BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), callType, callResult);
+		//在返回外呼结果给DOB服务器时，还需要加入一个前置流程的外呼结果
+		//前置外呼结果，0：没有前置; 1：确认; 2：不确认; 3：未接听;
+		//由于这里外呼失败，所以前置外呼结果只能是： 0 （没有前置）或是3（未接听）
+		String preCallResult = "0";
+		int isConfirm = bshOrderList.getInt("IS_CONFIRM");
+		int productName = bshOrderList.getInt("PRODUCT_NAME");
+		if(isConfirm==1 && (productName==6 || productName==8)) {
+			//如果 isConfirm==1 且 产品类目为 6（灶具）或是 8（洗碗机）时，表示有前置流程
+			preCallResult = "3";
+		}
+		
+		BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), callType,preCallResult,callResult);
 		Thread httpRequestThread = new Thread(httpRequestT);
 		httpRequestThread.start();
 		

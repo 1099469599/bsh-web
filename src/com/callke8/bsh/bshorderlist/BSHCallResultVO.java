@@ -16,7 +16,8 @@ import com.callke8.utils.Md5Utils;
 	callType	外呼类型0.二次未接通1.一次接通/二次接通2放弃呼叫3已过期
 	time	时间（yyyyMMddHHmmss）
 	sign	签名（全小写）= md5(time + orderId+ key)key为约定好的密钥
-	callResult	外呼结果 1：确认建单   2 暂不安装  3 短信确认   4 错误或无回复  5 放弃呼叫 6已过期
+	preCallResult 前置外呼结果，0：没有前置; 1：确认; 2：不确认; 3：未接听;
+	callResult	外呼结果 1：确认建单   2 暂不安装  3 短信确认   4 工程师电话确认 5 错误回复 ;6:放弃呼叫 ;7:已过期 ;8:外呼失败;9：无回复;10:环境不具备;
  * 
  * @author 黄文周
  *
@@ -30,6 +31,8 @@ public class BSHCallResultVO {
 	private String time;
 	
 	private String sign;
+	
+	private String preCallResult;
 	
 	private String callResult;
 	
@@ -45,7 +48,7 @@ public class BSHCallResultVO {
 	 * @param callType
 	 * 			外呼类型0.二次未接通1.一次接通/二次接通2放弃呼叫3已过期
 	 * @param callResult
-	 * 			外呼结果 1：确认建单   2 暂不安装  3 短信确认   4 错误或无回复  5 放弃呼叫 6已过期
+	 * 			外呼结果 1：确认建单   2 暂不安装  3 短信确认   4 工程师电话确认 5 错误回复 ;6:放弃呼叫 ;7:已过期 ;8:外呼失败;9：无回复;10:环境不具备;
 	 * @param bshCallResultKey
 	 * 			呼叫结果反馈密钥
 	 */
@@ -55,6 +58,30 @@ public class BSHCallResultVO {
 		this.callType = callType;
 		this.time = DateFormatUtils.formatDateTime(new Date(), "yyyyMMddHHmmss");
 		this.sign = Md5Utils.Md5(this.time + this.orderId + bshCallResultKey);
+		this.callResult = callResult;
+		
+	}
+	
+	/**
+	 * 构造函数
+	 * 
+	 * @param orderId
+	 * 			订单ID
+	 * @param callType
+	 * 			外呼类型0.二次未接通1.一次接通/二次接通2放弃呼叫3已过期
+	 * @param preCallResult 前置外呼结果，0：没有前置; 1：确认; 2：不确认; 3：未接听;
+	 * @param callResult
+	 * 			外呼结果 1：确认建单   2 暂不安装  3 短信确认   4 工程师电话确认 5 错误回复 ;6:放弃呼叫 ;7:已过期 ;8:外呼失败;9：无回复;10:环境不具备;
+	 * @param bshCallResultKey
+	 * 			呼叫结果反馈密钥
+	 */
+	public BSHCallResultVO(String orderId,String callType,String preCallResult,String callResult,String bshCallResultKey) {
+		
+		this.orderId = orderId;
+		this.callType = callType;
+		this.time = DateFormatUtils.formatDateTime(new Date(), "yyyyMMddHHmmss");
+		this.sign = Md5Utils.Md5(this.time + this.orderId + bshCallResultKey);
+		this.preCallResult = preCallResult;
 		this.callResult = callResult;
 		
 	}
@@ -90,6 +117,14 @@ public class BSHCallResultVO {
 	public void setSign(String sign) {
 		this.sign = sign;
 	}
+	
+	public String getPreCallResult() {
+		return preCallResult;
+	}
+
+	public void setPreCallResult(String preCallResult) {
+		this.preCallResult = preCallResult;
+	}
 
 	public String getCallResult() {
 		return callResult;
@@ -108,6 +143,7 @@ public class BSHCallResultVO {
 		sb.append("\"callType\":\"" + getCallType() + "\",");
 		sb.append("\"time\":\"" + getTime() + "\",");
 		sb.append("\"sign\":\"" + getSign() + "\",");
+		sb.append("\"preCallResult\":\"" + getPreCallResult() + "\",");
 		sb.append("\"callResult\":\"" + getCallResult() + "\"");
 		sb.append("}");
 		

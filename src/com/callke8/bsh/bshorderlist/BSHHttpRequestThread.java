@@ -30,7 +30,7 @@ public class BSHHttpRequestThread implements Runnable {
 		callType	外呼类型0.二次未接通1.一次接通/二次接通2放弃呼叫3已过期
 		time	时间（yyyyMMddHHmmss）
 		sign	签名（全小写）= md5(time + orderId+ key)key为约定好的密钥
-		callResult	外呼结果 1：确认建单   2 暂不安装  3 短信确认 4提前预约  5 错误或无回复  6 放弃呼叫 7已过期 8.呼叫失败  9无回复 10环境不具备"
+		callResult	外呼结果 1：确认建单   2 暂不安装  3 短信确认   4 工程师电话确认 5 错误回复 ;6:放弃呼叫 ;7:已过期 ;8:外呼失败;9：无回复;10:环境不具备;
 	 * 
 	 * @param id
 	 * 				订单对应的ID，用于储存反馈提交反馈json及由服务器返回的处理结果
@@ -62,6 +62,52 @@ public class BSHHttpRequestThread implements Runnable {
 		}
 		
 		this.bshCallResultVO = new BSHCallResultVO(orderId, callType, callResult,bshCallBackKey);
+
+	}
+	
+	/**
+	 * 反馈呼叫结果
+	 * 
+	 *  * 参数	说明
+		orderId	订单号id
+		callType	外呼类型0.二次未接通1.一次接通/二次接通2放弃呼叫3已过期
+		time	时间（yyyyMMddHHmmss）
+		sign	签名（全小写）= md5(time + orderId+ key)key为约定好的密钥
+		preCallResult 前置外呼结果，0：没有前置; 1：确认; 2：不确认; 3：未接听;
+		callResult	外呼结果 1：确认建单   2 暂不安装  3 短信确认   4 工程师电话确认 5 错误回复 ;6:放弃呼叫 ;7:已过期 ;8:外呼失败;9：无回复;10:环境不具备;
+	 * 
+	 * @param id
+	 * 				订单对应的ID，用于储存反馈提交反馈json及由服务器返回的处理结果
+	 * 
+	 * @param orderId
+	 * 				订单编号
+	 * @param callType
+	 * 				外呼类型
+	 * @param preCallResult
+	 * 				前置外呼结果，0：没有前置; 1：确认; 2：不确认; 3：未接听;
+	 * @param callResult
+	 * 				外呼结果 1：确认建单   2 暂不安装  3 短信确认   4 工程师电话确认 5 错误回复 ;6:放弃呼叫 ;7:已过期 ;8:外呼失败;9：无回复;10:环境不具备;
+	 */
+	public BSHHttpRequestThread(String id,String orderId,String callType,String preCallResult,String callResult) {
+
+		this.id = id;
+		
+		this.bshOrderList = BSHOrderList.dao.getBSHOrderListById(id);     //根据ID，取出订单信息
+		
+		if(BlankUtils.isBlank(bshOrderList)) {                            //如果从数据库中取出的订单信息，如果订单信息为空时，直接返回
+			return;
+		}
+		
+		String channelSource = String.valueOf(bshOrderList.getInt("CHANNEL_SOURCE"));     //CHANNEL_SOURCE购物平台(1：京东平台;2：苏宁平台;3：天猫平台;4：国美平台)
+		
+		this.bshCallBackUrl = MemoryVariableUtil.getDictName("BSH_CALLBACK_URL", channelSource);      //呼叫结果反馈地址     
+		this.bshCallBackKey = MemoryVariableUtil.getDictName("BSH_CALLBACK_KEY", channelSource);      //呼叫结果反馈密钥
+		
+		if(BlankUtils.isBlank(bshCallBackUrl) || BlankUtils.isBlank(bshCallBackKey)) {                //只要反馈的地址和密钥为空，直接退出
+			return;
+		}
+		
+		this.bshCallResultVO = new BSHCallResultVO(orderId, callType, preCallResult,callResult,bshCallBackKey);
 
 	}
 	

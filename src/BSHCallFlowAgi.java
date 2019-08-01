@@ -78,22 +78,104 @@ public class BSHCallFlowAgi extends BaseAgiScript {
 					String prefixCallFlowRespond = execPrefixCallFlow(bshOrderList,channel);     //执行前置流程，并返回客户回复按键
 					if(!prefixCallFlowRespond.equals("1")) {     //如果客户回复的按键不为1，则表示安装环境不具备,需要提前返回该通话，并将客户外呼结果为成功，客户回复状态为10，即是环境不具备
 						
+						/*
+						 * 如果客户有前置流程中回复的结果值不为1时，有三种情况 
+							(1)回复值为2，即是环境不具备，直接将外呼结果返回即可
+							(2)错误的按键值
+							(3)无回复值
+						   不过可能将这三种情况，归为两类：
+						   (1)回复值为2
+						   (2)错误回复或是无回复
+						  
+						     针对这两类回复处理如下
+						    (1)回复值为2：直接将外呼结果存入订单记录表，并将外呼结果返回给DOB接口
+						    		  存入订单记录表数据为：
+						    		  	  respond=10 即是环境不具备
+						    		  	  keyValue=2 直接反馈按键结果
+						    		 返回给DOB的数据如下：
+						    		 	　　orderId 订单编号
+						    		 	　　callType １（一次或两次呼通）
+						    		 	　　preCallResult 前置外呼结果，2：不确认;
+						    		 	　　callResult　10(环境不具备)
+						    (2)错误回复或是无回复： 
+						    	分两种情况 ，当前的外呼是第一次还是第二次
+						    		如果是第一次呼叫，则返回数据到订单列表，并将订单记录设置为待重呼
+						    			   返回订单记录数据为：
+						    			   respond=10 即环境不具备 
+						    			   keyValue=(错误回复就返回直接按键值，如果是无回复就返回无回复)
+						    		如果是第二次呼叫,则返回返回数据到订单列表，并将订单记录设置为外呼成功
+						    
+						*/
+					
+						
 						//如果客户返回的按键为2，即是环境不具备时，不再往下执行。
 						//在返回之前，保存外呼的结果
-						BSHOrderList.dao.updateBSHOrderListRespondAndBillsec(bshOrderList.get("ID").toString(), "10", Integer.valueOf(channel.getVariable("CDR(billsec)")), prefixCallFlowRespond);
-						
-						//需要将客户回复结果返回给BSH服务器
-						//同时，将呼叫成功结果反馈给 BSH 服务器
-						BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "1", String.valueOf(10));
-						Thread httpRequestThread = new Thread(httpRequestT);
-						httpRequestThread.start();
-						
-						//无论是否回复什么结果，或是没有回复结果,在这里表示外呼已经结束，需要将活跃通道减掉一个
-						if(BSHPredial.activeChannelCount > 0) {        
-							BSHPredial.activeChannelCount--;
+						String keyValue = prefixCallFlowRespond;
+						if(BlankUtils.isBlank(prefixCallFlowRespond)) {
+							keyValue = "无回复";
 						}
 						
-						return;
+						//无论客户回复的按键是什么，都需要返回外呼结果给订单列表
+						BSHOrderList.dao.updateBSHOrderListRespondAndBillsec(bshOrderList.get("ID").toString(), "10", Integer.valueOf(channel.getVariable("CDR(billsec)")), keyValue);
+						
+						if(keyValue.equals("2")) {      //如果客户的回复结果为2，即是环境不具备，将外呼结果返回订单列表，将外呼结果返回给DOB接口
+							
+							//在返回外呼结果给DOB服务器时，还需要加入一个前置流程的外呼结果
+							//前置外呼结果，0：没有前置; 1：确认; 2：不确认; 3：未接听;
+							//由于这里外呼失败，所以前置外呼结果只能是：2：不确认;
+							String preCallResult = "2";
+		
+							BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "1",preCallResult,String.valueOf(10));
+							//BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "1",String.valueOf(10));
+							Thread httpRequestThread = new Thread(httpRequestT);
+							httpRequestThread.start();
+							
+							//无论是否回复什么结果，或是没有回复结果,在这里表示外呼已经结束，需要将活跃通道减掉一个
+							if(BSHPredial.activeChannelCount > 0) {        
+								BSHPredial.activeChannelCount--;
+							}
+							
+							return;	
+							
+						}else {				//回复错误或是无回复时
+							
+							//判断当前的外呼是否为第一次外呼
+							int retried = bshOrderList.getInt("RETRIED");
+							
+							if(retried < BSHCallParamConfig.getRetryTimes()) {      //如果已重试次数小于限定的重试次数时,设置为重呼
+								
+								//暂不将外呼结果返回给DOB系统，而是将该记录设置为待重呼
+								//设置当前号码的状态为重试状态
+								BSHOrderList.dao.updateBSHOrderListStateToRetry(bshOrderList.getInt("ID"), "3", BSHCallParamConfig.getRetryInterval(), "前置流程错误回复或无回复");
+								
+							} else {                                               //如果重试次数已经达到最大的次数之后
+								
+								//将处呼结果返回给
+								//在返回外呼结果给DOB服务器时，还需要加入一个前置流程的外呼结果
+								//前置外呼结果，0：没有前置; 1：确认; 2：不确认; 3：未接听;
+								//由于这里外呼失败，所以前置外呼结果只能是：2：不确认;
+								String preCallResult = "2";
+								
+								String callResultValue = "5";      //我们重新定义这个外呼结果的值，默认设置为 5，即是错误回复；如果客户是无回复时，再将这个值设置为9，即是无回复
+								if(keyValue.equals("无回复")) {
+									callResultValue = "9";
+								}
+			
+								BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "1",preCallResult,callResultValue);
+								//BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "1",String.valueOf(10));
+								Thread httpRequestThread = new Thread(httpRequestT);
+								httpRequestThread.start();
+							}
+							
+							//无论是否回复什么结果，或是没有回复结果,在这里表示外呼已经结束，需要将活跃通道减掉一个
+							if(BSHPredial.activeChannelCount > 0) {        
+								BSHPredial.activeChannelCount--;
+							}
+							
+							return;
+							
+						}
+
 					}
 				}
 			}
@@ -186,8 +268,16 @@ public class BSHCallFlowAgi extends BaseAgiScript {
 				 * 			prefix_productName_8_repond_2：
 				 * 				为了一次上门就能装好，需要您准备好门板之后再预约安装，洗碗机门体内侧有一个二维码，请您扫码预约安装服务，还可以方便的获取使用指南，非常抱歉给您带去不便，感谢您的配合，再见
 				 */
-				exec("Noop","客户 " + bshOrderList.get("CUSTOMER_TEL") + " 执行前置流程，客户无回复、错误回复或回复按键2，表示安装环境不具备,将不再执行安装确认流程！");
-				exec("PlayBack",prefixCallFLowRespond2VoiceFile);    
+				
+				if(!BlankUtils.isBlank(prefixCallFlowRespond) && prefixCallFlowRespond.equals("2")) {
+					exec("Noop","客户 " + bshOrderList.get("CUSTOMER_TEL") + " 执行前置流程，客户回复按键2，表示安装环境不具备,将不再执行安装确认流程！");
+					exec("PlayBack",prefixCallFLowRespond2VoiceFile);    
+				}else {    //客户回复不为2时，则提示：对不起，输入有误，我们可能会再次与您联系，再见！
+					String responseErrorVoice = voicePath + "/" + BSHVoiceConfig.getVoiceMap().get("respond_error");
+					
+					exec("Noop","客户 " + bshOrderList.get("CUSTOMER_TEL") + " 执行前置流程，客户无回复、错误回复,系统将播放：对不起，输入有误，我们可能会再次与您联系，再见！");
+					exec("PlayBack",responseErrorVoice); 
+				}
 			}
 		
 		} catch (AgiException e) {
@@ -266,6 +356,7 @@ public class BSHCallFlowAgi extends BaseAgiScript {
 			}else {
 				exec("Noop","客户" + bshOrderList.get("CUSTOMER_TEL") + "无回复任何");
 				respond = "9";
+				//respond = "5";
 				
 				execPlayBack(respondErrorPlayList);     //回复后，还需要将结果播放回去
 			}
@@ -274,7 +365,20 @@ public class BSHCallFlowAgi extends BaseAgiScript {
 			
 			//需要将客户回复结果返回给BSH服务器
 			//同时，将呼叫成功结果反馈给 BSH 服务器
-			BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "1", String.valueOf(respond));
+			
+			//在返回外呼结果给DOB服务器时，还需要加入一个前置流程的外呼结果
+			//前置外呼结果，0：没有前置; 1：确认; 2：不确认; 3：未接听;
+			//由于这里外呼失败，所以前置外呼结果只能是： 0 （没有前置）或是1(确认);
+			String preCallResult = "0";
+			int isConfirm = bshOrderList.getInt("IS_CONFIRM");
+			int productName = bshOrderList.getInt("PRODUCT_NAME");
+			if(isConfirm==1 && (productName==6 || productName==8)) {
+				//如果 isConfirm==1 且 产品类目为 6（灶具）或是 8（洗碗机）时，表示有前置流程
+				preCallResult = "1";
+			}
+			
+			BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "1", preCallResult,String.valueOf(respond));
+			//BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "1",String.valueOf(respond));
 			Thread httpRequestThread = new Thread(httpRequestT);
 			httpRequestThread.start();
 			

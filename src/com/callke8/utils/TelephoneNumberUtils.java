@@ -13,7 +13,7 @@ public class TelephoneNumberUtils {
 	/**
 	 * 手机号码的判断规则
 	 */
-	private final static String REGEX_MOBILEPHONE = "^(0?)(1[345678]\\d{9})$";
+	private final static String REGEX_MOBILEPHONE = "^(0?)(1[3456789]\\d{9})$";
 	
 	/**
 	 * 座机号码的判断规则-带区号
