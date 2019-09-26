@@ -36,6 +36,12 @@ public class BSHCallResultVO {
 	
 	private String callResult;
 	
+	/**
+	 * @param outboundType
+     *              取出外呼类型，1：确认安装；2：零售核实
+	 */
+	private String outboundType;
+	
 	public BSHCallResultVO() {
 		
 	}
@@ -74,8 +80,10 @@ public class BSHCallResultVO {
 	 * 			外呼结果 1：确认建单   2 暂不安装  3 短信确认   4 工程师电话确认 5 错误回复 ;6:放弃呼叫 ;7:已过期 ;8:外呼失败;9：无回复;10:环境不具备;
 	 * @param bshCallResultKey
 	 * 			呼叫结果反馈密钥
+	 * @param outboundType
+     *              取出外呼类型，1：确认安装；2：零售核实
 	 */
-	public BSHCallResultVO(String orderId,String callType,String preCallResult,String callResult,String bshCallResultKey) {
+	public BSHCallResultVO(String orderId,String callType,String preCallResult,String callResult,String outboundType,String bshCallResultKey) {
 		
 		this.orderId = orderId;
 		this.callType = callType;
@@ -83,6 +91,7 @@ public class BSHCallResultVO {
 		this.sign = Md5Utils.Md5(this.time + this.orderId + bshCallResultKey);
 		this.preCallResult = preCallResult;
 		this.callResult = callResult;
+		this.outboundType = outboundType;
 		
 	}
 
@@ -134,7 +143,15 @@ public class BSHCallResultVO {
 		this.callResult = callResult;
 	}
 	
-	public String toString() {
+	public String getOutboundType() {
+        return outboundType;
+    }
+
+    public void setOutboundType(String outboundType) {
+        this.outboundType = outboundType;
+    }
+
+    public String toString() {
 		
 		StringBuilder sb = new StringBuilder();
 		
@@ -144,7 +161,8 @@ public class BSHCallResultVO {
 		sb.append("\"time\":\"" + getTime() + "\",");
 		sb.append("\"sign\":\"" + getSign() + "\",");
 		sb.append("\"preCallResult\":\"" + getPreCallResult() + "\",");
-		sb.append("\"callResult\":\"" + getCallResult() + "\"");
+		sb.append("\"callResult\":\"" + getCallResult() + "\",");
+		sb.append("\"outboundType\":\"" + getOutboundType() + "\"");
 		sb.append("}");
 		
 		return sb.toString();

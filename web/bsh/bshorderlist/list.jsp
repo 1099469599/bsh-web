@@ -26,7 +26,7 @@
     		$('#startTime').datetimebox('setValue',getCurrDate() + ' 00:00:00');
     		$('#endTime').datetimebox('setValue',getDateAfter(1) + ' 00:00:00');
     		
-    		$("#timeInterval").combobox({
+    	    $("#timeInterval").combobox({
     			onChange:function(newValue,oldValue){
     				//alert("newValue:" + newValue + ";oldValue:" + nv + ";getDateBefore:" + getDateBefore(newValue));
     				$('#startTime').datetimebox('setValue',getDateBefore(newValue-1) + ' 00:00:00');
@@ -41,6 +41,7 @@
     		var stateComboboxDataFor1 = eval('${stateComboboxDataFor1}');
     		var respondComboboxDataFor1 = eval('${respondComboboxDataFor1}');
     		var timeTypeComboboxDataFor1 = eval('${timeTypeComboboxDataFor1}');
+    		var outboundTypeComboboxDataFor1 = eval('${outboundTypeComboboxDataFor1}');
     		
     		//购物平台Combobox
     		$("#channelSource").combobox({    
@@ -84,6 +85,13 @@
     			panelHeight:'auto'
 			}).combobox('loadData',timeTypeComboboxDataFor1).combobox('setValue',"empty");
     		
+    		//外呼数据类型
+    		$("#outboundType").combobox({
+    			valueField:'id',
+    			textField:'text',
+    			panelHeight:'auto'
+    		}).combobox('loadData',outboundTypeComboboxDataFor1).combobox('setValue',"empty");
+    		
     		$("#bshOrderListDg").datagrid({
     			pageSize:30,
     			pagination:true,
@@ -102,6 +110,7 @@
     				brand:$('#brand').combobox('getValue'),
     				productName:$('#productName').combobox('getValue'),
     				isConfirm:$("#isConfirm").combobox('getValue'),
+    				outboundType:$("#outboundType").combobox('getValue'),
     				state:$('#state').combobox('getValue'),
     				respond:$('#respond').combobox('getValue'),
     				timeType:$('#timeType').combobox('getValue'),
@@ -132,6 +141,7 @@
 				brand:$('#brand').combobox('getValue'),
 				productName:$("#productName").combobox('getValue'),
 				isConfirm:$("#isConfirm").combobox('getValue'),
+				outboundType:$("#outboundType").combobox('getValue'),
 				state:$("#state").combobox('getValue'),
 				respond:$('#respond').combobox('getValue'),
 				timeType:$('#timeType').combobox('getValue'),
@@ -182,6 +192,16 @@
     		}
     	}
     	
+    	//设置外呼类型的颜色
+        function outboundTypeFormatter(value,data,index) {
+            outboundType = data.OUTBOUND_TYPE;
+            if(outboundType==1) {       //确认安装
+                return "<span>" + data.OUTBOUND_TYPE_DESC + "</span>";
+            }else {
+                return "<span style='color:#ff0000'>" + data.OUTBOUND_TYPE_DESC + "</span>";
+            }
+        }
+    	
     	function orderListExport() {
     		
     		$("#exportForm").form('submit',{
@@ -194,6 +214,8 @@
     				param.customerTel = $("#customerTel").textbox('getValue'),
     				param.brand = $('#brand').combobox('getValue'),
     				param.productName = $("#productName").combobox('getValue'),
+    				param.isConfirm = $("#isConfirm").combobox('getValue'),
+    				param.outboundType = $("#outboundType").combobox('getValue'),
     				param.state = $("#state").combobox('getValue'),
     				param.respond = $('#respond').combobox('getValue'),
     				param.timeType = $('#timeType').combobox('getValue'),
@@ -267,20 +289,23 @@
 					<input id="startTime" name="startTime" class="easyui-datetimebox" style="width:200px;"/><span style="padding-left:37px;padding-right:37px;">至</span> <input id="endTime" name="endTime" class="easyui-datetimebox" style="width:200px;"/>
 					<span style="padding-left:20px;">
 						时间间隔：
-						<select class="easyui-combobox" id="timeInterval" name="timeInterval" style="width:80px;">
-							<option value="1">1天</option>
-							<option value="2">2天</option>
-							<option value="3">3天</option>
-							<option value="4">4天</option>
-							<option value="5">5天</option>
-							<option value="6">6天</option>
-							<option value="7">7天</option>
-							<option value="8">8天</option>
-							<option value="9">9天</option>
-							<option value="10">10天</option>
-						</select>
+						<select id="timeInterval" style="width:80px;">
+                            <option value="1">1天</option>
+                            <option value="2">2天</option>
+                            <option value="3">3天</option>
+                            <option value="4">4天</option>
+                            <option value="5">5天</option>
+                            <option value="6">6天</option>
+                            <option value="7">7天</option>
+                            <option value="8">8天</option>
+                            <option value="9">9天</option>
+                            <option value="10">10天</option>
+                        </select>
 					</span>
-					<span style="padding-left:146px;"><a href="javascript:findData()" class="easyui-linkbutton" style="width:155px;" data-options="iconCls:'icon-search'">查询</a></span>
+					<span style="padding-left:20px;">
+					   外呼类型：<select class="easyui-combobox" id="outboundType" name="outboundType" style="width:100px;"></select>
+					</span>
+					<span style="padding-left:30px;"><a href="javascript:findData()" class="easyui-linkbutton" style="width:155px;" data-options="iconCls:'icon-search'">查询</a></span>
 				</td>
 			</tr>
 		</table>
@@ -303,6 +328,7 @@
 					<th data-options="field:'TIME_TYPE_DESC',width:100,align:'center'">日期类型</th>
 					<th data-options="field:'EXPECT_INSTALL_DATE',width:100,align:'center'">计划安装日期</th>
 					<th data-options="field:'IS_CONFIRM_DESC',width:100,align:'center',formatter:isConfirmFormatter">前置流程</th>
+					<th data-options="field:'OUTBOUND_TYPE_DESC',width:100,align:'center',formatter:outboundTypeFormatter">外呼类型</th>
 					<th data-options="field:'RESPOND_DESC',width:120,align:'center',formatter:respondformatter">客户回复</th>
 					
 					<th data-options="field:'VAR1',width:100,align:'center'">按键值</th>

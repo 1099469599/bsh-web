@@ -55,8 +55,13 @@ public class BSHCleanTimeOutTask extends TimerTask {
 					preCallResult = "3";
 				}
 				
+				/**
+				 * 取出外呼类型，1：确认安装；2：零售核实
+				 */
+				int outboundType = bshOrderList.getInt("OUTBOUND_TYPE");
+				
 				//对于超时的记录，将结果反馈给BSH服务器
-				BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "2",preCallResult,"6");
+				BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "2",preCallResult,"6",String.valueOf(outboundType));
 				Thread httpRequestThread = new Thread(httpRequestT);
 				httpRequestThread.start();
 				

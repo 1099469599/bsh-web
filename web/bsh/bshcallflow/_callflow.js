@@ -1,5 +1,5 @@
 var voiceTypeArr = new Array("开场", "确认安装", "暂不安装", "延后安装", "已经预约", "错误回复",
-		"日期", "产品","前置语音");
+		"日期", "产品","前置语音","零售核实语音");
 var currCreateType = 'voiceFile';
 var currentSelectRowData = null;
 var currVoiceType = null;
@@ -120,9 +120,16 @@ $(function() {
 
 function voiceManager(vT) {
 	     
-	
+	//alert(vT);
 	currVoiceType = vT;
-	currVoiceTypeDesc = voiceTypeArr[vT];
+	
+	if(vT == '51') {
+		currVoiceTypeDesc = '未购机确认';
+	} else if(vT == '52') {
+		currVoiceTypeDesc = '确认未购机';
+	}else {
+		currVoiceTypeDesc = voiceTypeArr[vT];
+	}
 	$("#addVoiceBtnId").linkbutton({
 		text : '增加  ' + currVoiceTypeDesc + " 语音"
 	});

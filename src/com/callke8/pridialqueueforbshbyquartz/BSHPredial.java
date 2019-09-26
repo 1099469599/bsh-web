@@ -229,8 +229,13 @@ public class BSHPredial {
 				preCallResult = "3";
 			}
 			
+			/**
+             * 取出外呼类型，1：确认安装；2：零售核实
+             */
+            int outboundType = bshOrderList.getInt("OUTBOUND_TYPE");
+			
 			//两次都失败同时，将这个未接听的结果反馈给BSH服务器
-			BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "0",preCallResult,"8");
+			BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "0",preCallResult,"8",String.valueOf(outboundType));
 			Thread httpRequestThread = new Thread(httpRequestT);
 			httpRequestThread.start();
 			
@@ -270,8 +275,13 @@ public class BSHPredial {
 				preCallResult = "3";
 			}
 			
+			/**
+             * 取出外呼类型，1：确认安装；2：零售核实
+             */
+            int outboundType = bshOrderList.getInt("OUTBOUND_TYPE");
+			
 			//两次都失败同时，将这个未接听的结果反馈给BSH服务器
-			BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "0",preCallResult,"8");
+			BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), "0",preCallResult,"8",String.valueOf(outboundType));
 			Thread httpRequestThread = new Thread(httpRequestT);
 			httpRequestThread.start();
 			
@@ -325,7 +335,12 @@ public class BSHPredial {
 			preCallResult = "3";
 		}
 		
-		BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), callType,preCallResult,callResult);
+		/**
+         * 取出外呼类型，1：确认安装；2：零售核实
+         */
+        int outboundType = bshOrderList.getInt("OUTBOUND_TYPE");
+		
+		BSHHttpRequestThread httpRequestT = new BSHHttpRequestThread(bshOrderList.get("ID").toString(),bshOrderList.getStr("ORDER_ID"), callType,preCallResult,callResult,String.valueOf(outboundType));
 		Thread httpRequestThread = new Thread(httpRequestT);
 		httpRequestThread.start();
 		

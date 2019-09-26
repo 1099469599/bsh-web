@@ -38,9 +38,11 @@ public class BSHHttpRequestThread implements Runnable {
 	 * @param orderId
 	 * 				订单编号
 	 * @param callType
-	 * 				外呼类型
+	 * 				外呼类型0.二次未接通1.一次接通/二次接通2放弃呼叫3已过期
 	 * @param callResult
 	 * 				外呼结果
+	 * @param outboundType
+	 *              取出外呼类型，1：确认安装；2：零售核实
 	 */
 	public BSHHttpRequestThread(String id,String orderId,String callType,String callResult) {
 
@@ -86,9 +88,11 @@ public class BSHHttpRequestThread implements Runnable {
 	 * @param preCallResult
 	 * 				前置外呼结果，0：没有前置; 1：确认; 2：不确认; 3：未接听;
 	 * @param callResult
-	 * 				外呼结果 1：确认建单   2 暂不安装  3 短信确认   4 工程师电话确认 5 错误回复 ;6:放弃呼叫 ;7:已过期 ;8:外呼失败;9：无回复;10:环境不具备;
+	 * 				外呼结果 1：确认建单   2 暂不安装  3 短信确认   4 工程师电话确认 5 错误回复 ;6:放弃呼叫 ;7:已过期 ;8:外呼失败;9：无回复;10:环境不具备;11:确认购买过 12:没有购买过
+	 * @param outboundType
+     *              取出外呼类型，1：确认安装；2：零售核实
 	 */
-	public BSHHttpRequestThread(String id,String orderId,String callType,String preCallResult,String callResult) {
+	public BSHHttpRequestThread(String id,String orderId,String callType,String preCallResult,String callResult,String outboundType) {
 
 		this.id = id;
 		
@@ -107,7 +111,7 @@ public class BSHHttpRequestThread implements Runnable {
 			return;
 		}
 		
-		this.bshCallResultVO = new BSHCallResultVO(orderId, callType, preCallResult,callResult,bshCallBackKey);
+		this.bshCallResultVO = new BSHCallResultVO(orderId, callType, preCallResult,callResult,outboundType,bshCallBackKey);
 
 	}
 	

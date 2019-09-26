@@ -16,10 +16,12 @@
 					<th data-options="field:'BRAND_DESC',width:100,align:'center'">品牌</th>
 					<th data-options="field:'PRODUCT_NAME_DESC',width:100,align:'center'">产品名称</th>
 					<th data-options="field:'EXPECT_INSTALL_DATE',width:100,align:'center'">计划安装日期</th>
+					<th data-options="field:'IS_CONFIRM_DESC',width:100,align:'center',formatter:isConfirmFormatter">前置流程</th>
+                    <th data-options="field:'OUTBOUND_TYPE_DESC',width:100,align:'center',formatter:outboundTypeFormatter">外呼类型</th>
 					<th data-options="field:'RESPOND_DESC',width:120,align:'center',formatter:respondformatter">客户回复</th>
-					<!-- 
+					 
 					<th data-options="field:'VAR1',width:100,align:'center'">按键值</th>
-					 -->
+					
 					<th data-options="field:'CREATE_TIME',width:170,align:'center'">创建时间</th>
 					<th data-options="field:'STATE_DESC',width:100,align:'center',formatter:stateformatter">外呼结果</th>
 					<th data-options="field:'LAST_CALL_RESULT',width:180,align:'center'">失败原因</th>

@@ -41,6 +41,7 @@ public class BSHOrderListController extends Controller implements IController {
 		setAttr("stateComboboxDataFor1",CommonController.getComboboxToString("BSH_CALL_STATE","1"));        				//外呼状态带请选择的combobox
 		setAttr("respondComboboxDataFor1",CommonController.getComboboxToString("BSH_CLIENT_RESPOND","1"));       			//客户回复带请选择的combobox
 		setAttr("timeTypeComboboxDataFor1",CommonController.getComboboxToString("BSH_TIME_TYPE","1"));       			//客户回复带请选择的combobox
+		setAttr("outboundTypeComboboxDataFor1",CommonController.getComboboxToString("BSH_OUTBOUND_TYPE","1"));     //订单数据类型，1：确认安装的数据；2：零售核实的数据
 		
 		render("list.jsp");
 	}
@@ -55,6 +56,7 @@ public class BSHOrderListController extends Controller implements IController {
 		String brand = getPara("brand");
 		String productName = getPara("productName");
 		String isConfirm = getPara("isConfirm");
+		String outboundType = getPara("outboundType");
 		String state = getPara("state");
 		String respond = getPara("respond");
 		String timeType = getPara("timeType");
@@ -78,7 +80,7 @@ public class BSHOrderListController extends Controller implements IController {
 		Integer pageSize = BlankUtils.isBlank(getPara("rows"))?1:Integer.valueOf(getPara("rows"));
 		Integer pageNumber = BlankUtils.isBlank(getPara("page"))?1:Integer.valueOf(getPara("page"));
 		
-		Map map = BSHOrderList.dao.getBSHOrderListByPaginateToMap(pageNumber, pageSize, orderId,channelSource,customerName, customerTel,brand,productName,isConfirm,state,respond,timeType,createTimeStartTime,createTimeEndTime,loadTimeStartTime,loadTimeEndTime);
+		Map map = BSHOrderList.dao.getBSHOrderListByPaginateToMap(pageNumber, pageSize, orderId,channelSource,customerName, customerTel,brand,productName,isConfirm,outboundType,state,respond,timeType,createTimeStartTime,createTimeEndTime,loadTimeStartTime,loadTimeEndTime);
 		//System.out.println("map:" + map);
 		renderJson(map);
 		
@@ -101,7 +103,10 @@ public class BSHOrderListController extends Controller implements IController {
 		if(postType.equalsIgnoreCase("POST")) {
 			orderListVO = BSHOrderListVO.newInstance(getJsonContent(this.getRequest()));     
 		} else {
-			orderListVO = BSHOrderListVO.newInstance(this);
+		    renderJson(resultMap("ERROR","接收订单数据失败,系统只接收通过 POST JSON 数据的方式上传数据。"));   
+            System.out.println("接收订单数据失败,系统只接收通过 POST JSON 数据的方式上传数据。");                   //输出接收数据失败原因
+            return;
+			//orderListVO = BSHOrderListVO.newInstance(this);
 		}
 		
 		/**
@@ -207,6 +212,7 @@ public class BSHOrderListController extends Controller implements IController {
 		bol.set("CHANNEL_SOURCE", Integer.valueOf(orderListVO.getChannelSource()));
 		bol.set("CREATE_TIME", DateFormatUtils.getCurrentDate());
 		bol.set("IS_CONFIRM", Integer.valueOf(orderListVO.getIsConfirm()));
+		bol.set("OUTBOUND_TYPE", Integer.valueOf(orderListVO.getOutboundType()));
 		
 		boolean b = BSHOrderList.dao.add(bol);
 		
@@ -596,6 +602,8 @@ public class BSHOrderListController extends Controller implements IController {
 		String customerTel = getPara("customerTel");
 		String brand = getPara("brand");
 		String productName = getPara("productName");
+		String isConfirm = getPara("isConfirm");
+		String outboundType = getPara("outboundType");
 		String state = getPara("state");
 		String respond = getPara("respond");
 		String timeType = getPara("timeType");
@@ -617,11 +625,11 @@ public class BSHOrderListController extends Controller implements IController {
 		}
 		
 		//根据传入的条件，从数据库中查询出列表
-		List<Record> list = BSHOrderList.dao.getBSHOrderListByCondition(orderId, channelSource, customerName, customerTel, brand, productName, state, respond,timeType, createTimeStartTime, createTimeEndTime, loadTimeStartTime, loadTimeEndTime);
+		List<Record> list = BSHOrderList.dao.getBSHOrderListByCondition(orderId, channelSource, customerName, customerTel, brand, productName,isConfirm,outboundType,state, respond,timeType, createTimeStartTime, createTimeEndTime, loadTimeStartTime, loadTimeEndTime);
 		
 		//得到数据列表，准备以 Excel 方式导出
-		String[] headers = {"订单编号","购物平台","客户姓名","客户号码","省份","城市","外呼号码","品牌","产品名称","日期类型","计划安装日期","客户回复","按键值","创建时间","外呼结果","失败原因","已重试","外呼时间","通话时长","下次外呼时间","外呼结果JSON","接口响应"};
-		String[] columns = {"ORDER_ID","CHANNEL_SOURCE_DESC","CUSTOMER_NAME","CUSTOMER_TEL","PROVINCE","CITY","CALLOUT_TEL","BRAND_DESC","PRODUCT_NAME_DESC","TIME_TYPE_DESC","EXPECT_INSTALL_DATE","RESPOND_DESC","VAR1","CREATE_TIME","STATE_DESC","LAST_CALL_RESULT","RETRIED","LOAD_TIME","BILLSEC","NEXT_CALLOUT_TIME","CALLRESULT_JSON","FEEDBACK_CALLRESULT_RESPOND"};
+		String[] headers = {"订单编号","购物平台","客户姓名","客户号码","省份","城市","外呼号码","品牌","产品名称","日期类型","计划安装日期","前置流程","外呼类型","客户回复","按键值","创建时间","外呼结果","失败原因","已重试","外呼时间","通话时长","下次外呼时间","外呼结果JSON","接口响应"};
+		String[] columns = {"ORDER_ID","CHANNEL_SOURCE_DESC","CUSTOMER_NAME","CUSTOMER_TEL","PROVINCE","CITY","CALLOUT_TEL","BRAND_DESC","PRODUCT_NAME_DESC","TIME_TYPE_DESC","EXPECT_INSTALL_DATE","IS_CONFIRM_DESC","OUTBOUND_TYPE_DESC","RESPOND_DESC","VAR1","CREATE_TIME","STATE_DESC","LAST_CALL_RESULT","RETRIED","LOAD_TIME","BILLSEC","NEXT_CALLOUT_TIME","CALLRESULT_JSON","FEEDBACK_CALLRESULT_RESPOND"};
 		//String[] headers = {"订单编号","购物平台","客户姓名","客户号码","省份","城市","外呼号码","品牌","产品名称","日期类型","计划安装日期","客户回复","创建时间","外呼结果","失败原因","已重试","外呼时间","通话时长","下次外呼时间","外呼结果JSON","接口响应"};
 		//String[] columns = {"ORDER_ID","CHANNEL_SOURCE_DESC","CUSTOMER_NAME","CUSTOMER_TEL","PROVINCE","CITY","CALLOUT_TEL","BRAND_DESC","PRODUCT_NAME_DESC","TIME_TYPE_DESC","EXPECT_INSTALL_DATE","RESPOND_DESC","CREATE_TIME","STATE_DESC","LAST_CALL_RESULT","RETRIED","LOAD_TIME","BILLSEC","NEXT_CALLOUT_TIME","CALLRESULT_JSON","FEEDBACK_CALLRESULT_RESPOND"};
 		String fileName = "时间区间:" + startTime + " 至 " + endTime + " .xls";

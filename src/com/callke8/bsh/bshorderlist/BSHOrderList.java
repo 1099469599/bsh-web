@@ -43,6 +43,7 @@ public class BSHOrderList extends Model<BSHOrderList> {
 	 * @param brand
 	 * @param productName
 	 * @param isConfirm
+	 * @param outboundType
 	 * @param state
 	 * @param respond
 	 * @param timeType
@@ -56,7 +57,7 @@ public class BSHOrderList extends Model<BSHOrderList> {
 	 * 					外呼时间的结束时间
 	 * @return
 	 */
-	public Page getBSHOrderListByPaginate(int pageNumber,int pageSize,String orderId,String channelSource,String customerName,String customerTel,String brand,String productName,String isConfirm,String state,String respond,String timeType,String createTimeStartTime,String createTimeEndTime,String loadTimeStartTime,String loadTimeEndTime) {
+	public Page getBSHOrderListByPaginate(int pageNumber,int pageSize,String orderId,String channelSource,String customerName,String customerTel,String brand,String productName,String isConfirm,String outboundType,String state,String respond,String timeType,String createTimeStartTime,String createTimeEndTime,String loadTimeStartTime,String loadTimeEndTime) {
 		
 		StringBuilder sb = new StringBuilder();
 		Object[] pars = new Object[20];
@@ -111,6 +112,13 @@ public class BSHOrderList extends Model<BSHOrderList> {
 			sb.append(" and IS_CONFIRM=?");
 			pars[index] = isConfirm;
 			index++;
+		}
+		
+		//订单数据类型
+		if(!BlankUtils.isBlank(outboundType) && !outboundType.equalsIgnoreCase("empty")) {
+		    sb.append(" and OUTBOUND_TYPE=?");
+		    pars[index] = outboundType;
+		    index++;
 		}
 		
 		//外呼结果查询
@@ -180,6 +188,7 @@ public class BSHOrderList extends Model<BSHOrderList> {
 	 * @param brand
 	 * @param productName
 	 * @param isConfirm
+	 * @param outboundType
 	 * @param state
 	 * @param respond
 	 * @param createTimeStartTime
@@ -192,9 +201,9 @@ public class BSHOrderList extends Model<BSHOrderList> {
 	 * 					外呼时间的结束时间
 	 * @return
 	 */
-	public Map getBSHOrderListByPaginateToMap(int pageNumber,int pageSize,String orderId,String channelSource,String customerName,String customerTel,String brand,String productName,String isConfirm,String state,String respond,String timeType,String createTimeStartTime,String createTimeEndTime,String loadTimeStartTime,String loadTimeEndTime) {
+	public Map getBSHOrderListByPaginateToMap(int pageNumber,int pageSize,String orderId,String channelSource,String customerName,String customerTel,String brand,String productName,String isConfirm,String outboundType,String state,String respond,String timeType,String createTimeStartTime,String createTimeEndTime,String loadTimeStartTime,String loadTimeEndTime) {
 		
-		Page<Record> p = getBSHOrderListByPaginate(pageNumber, pageSize, orderId,channelSource,customerName, customerTel,brand,productName,isConfirm,state,respond,timeType,createTimeStartTime, createTimeEndTime,loadTimeStartTime,loadTimeEndTime);
+		Page<Record> p = getBSHOrderListByPaginate(pageNumber, pageSize, orderId,channelSource,customerName, customerTel,brand,productName,isConfirm,outboundType,state,respond,timeType,createTimeStartTime, createTimeEndTime,loadTimeStartTime,loadTimeEndTime);
 		
 		int total = p.getTotalRow();    //获取查询出来的总数量
 		
@@ -229,6 +238,9 @@ public class BSHOrderList extends Model<BSHOrderList> {
 			//是否带前置流程
 			int isConfirmResult = r.getInt("IS_CONFIRM");
 			r.set("IS_CONFIRM_DESC", isConfirmResult==1?"有":"无");
+			
+			int outboundTypeResult = r.getInt("OUTBOUND_TYPE");
+			r.set("OUTBOUND_TYPE_DESC", outboundTypeResult==1?"确认安装":"零售核实");
 			
 			r.set("RETRIED", r.getInt("RETRIED") + "/" + BSHCallParamConfig.getRetryTimes());
 			
@@ -267,6 +279,7 @@ public class BSHOrderList extends Model<BSHOrderList> {
 		nr.set("CALLOUT_TEL", bshOrderList.get("CALLOUT_TEL"));
 		nr.set("STATE", bshOrderList.get("STATE"));
 		nr.set("IS_CONFIRM", bshOrderList.getInt("IS_CONFIRM"));
+		nr.set("OUTBOUND_TYPE", bshOrderList.getInt("OUTBOUND_TYPE"));
 		
 		return add(nr);
 	}
@@ -690,6 +703,8 @@ public class BSHOrderList extends Model<BSHOrderList> {
 	 * @param customerTel
 	 * @param brand
 	 * @param productName
+	 * @param isConfirm
+	 * @param outboundType
 	 * @param state
 	 * @param respond
 	 * @param timeType
@@ -703,7 +718,7 @@ public class BSHOrderList extends Model<BSHOrderList> {
 	 * 					外呼时间的结束时间
 	 * @return
 	 */
-	public List<Record> getBSHOrderListByCondition(String orderId,String channelSource,String customerName,String customerTel,String brand,String productName,String state,String respond,String timeType,String createTimeStartTime,String createTimeEndTime,String loadTimeStartTime,String loadTimeEndTime) {
+	public List<Record> getBSHOrderListByCondition(String orderId,String channelSource,String customerName,String customerTel,String brand,String productName,String isConfirm,String outboundType,String state,String respond,String timeType,String createTimeStartTime,String createTimeEndTime,String loadTimeStartTime,String loadTimeEndTime) {
 		
 		StringBuilder sb = new StringBuilder();
 		Object[] pars = new Object[20];
@@ -752,6 +767,20 @@ public class BSHOrderList extends Model<BSHOrderList> {
 			pars[index] = productName;
 			index++;
 		}
+		
+		//是否带前置流程
+		if(!BlankUtils.isBlank(isConfirm) && !isConfirm.equalsIgnoreCase("empty")) {
+		    sb.append(" and IS_CONFIRM=?");
+		    pars[index] = isConfirm;
+		    index ++;
+		}
+		
+		//是否带前置流程
+        if(!BlankUtils.isBlank(outboundType) && !outboundType.equalsIgnoreCase("empty")) {
+            sb.append(" and OUTBOUND_TYPE=?");
+            pars[index] = outboundType;
+            index ++;
+        }
 		
 		//外呼结果查询
 		if(!BlankUtils.isBlank(state) && !state.equalsIgnoreCase("empty")) {
@@ -819,6 +848,13 @@ public class BSHOrderList extends Model<BSHOrderList> {
 			int stateResult = r.getInt("STATE");
 			r.set("STATE_DESC", MemoryVariableUtil.getDictName("BSH_CALL_STATE", String.valueOf(stateResult)));
 			
+			//是否带前置流程
+            int isConfirmResult = r.getInt("IS_CONFIRM");
+            r.set("IS_CONFIRM_DESC", isConfirmResult==1?"有":"无");
+            
+            int outboundTypeResult = r.getInt("OUTBOUND_TYPE");
+            r.set("OUTBOUND_TYPE_DESC", outboundTypeResult==1?"确认安装":"零售核实");
+			
 			//购物平台
 			int channelSourceResult = r.getInt("CHANNEL_SOURCE");
 			r.set("CHANNEL_SOURCE_DESC", MemoryVariableUtil.getDictName("BSH_CHANNEL_SOURCE", String.valueOf(channelSourceResult)));
@@ -856,31 +892,35 @@ public class BSHOrderList extends Model<BSHOrderList> {
 	 * 			外呼时间：结束时间
 	 * @param channelSource
 	 * 			购物平台
+	 * @param outboundType 
+	 *          外呼类型，1：确认安装；2：零售核实
 	 * @return
 	 */
-	public Record getStatisticsData(String startTime,String endTime,String channelSource) {
+	public Record getStatisticsData(String startTime,String endTime,String channelSource,String outboundType) {
 		
 		Record data = new Record();
-		data.set("state1Data",0);
-		data.set("state2Data",0);
-		data.set("state3Data",0);
-		data.set("state4Data",0);
-		data.set("state5Data",0);
-		data.set("state6Data",0);
+		data.set("state1Data",0);    //已载入
+		data.set("state2Data",0);    //已成功
+		data.set("state3Data",0);    //待重呼
+		data.set("state4Data",0);    //已失败
+		data.set("state5Data",0);    //已过期
+		data.set("state6Data",0);    //放弃呼叫
 		
-		data.set("respond1Data", 0);
-		data.set("respond2Data", 0);
-		data.set("respond3Data", 0);
-		data.set("respond4Data", 0);
-		data.set("respond5Data", 0);
-		data.set("respond9Data", 0);
-		data.set("respond10Data", 0);
+		data.set("respond1Data", 0);    //确认安装
+		data.set("respond2Data", 0);    //暂不安装
+		data.set("respond3Data", 0);    //延后安装
+		data.set("respond4Data", 0);    //提前预约
+		data.set("respond5Data", 0);    //错误回复
+		data.set("respond9Data", 0);    //回复
+		data.set("respond10Data", 0);   //环境不具备
+		data.set("respond11Data", 0);   //确认安装过
+		data.set("respond12Data", 0);   //没有安装过
 		
 		//(1)取得统计数据（呼叫状态）
-		getStatisticsDataForState(data,startTime,endTime,channelSource);
+		getStatisticsDataForState(data,startTime,endTime,channelSource,outboundType);
 		
 		//(2)取得统计数据（客户回复）：客户回复总和=呼叫状态为2（即已成功）的数量
-		getStatisticsDataForRespond(data,startTime,endTime,channelSource);
+		getStatisticsDataForRespond(data,startTime,endTime,channelSource,outboundType);
 		
 		return data;
 	}
@@ -894,8 +934,11 @@ public class BSHOrderList extends Model<BSHOrderList> {
 	 * @param startTime
 	 * @param endTime
 	 * @param channelSource
+	 * @param outboundType
+     *          外呼类型，1：确认安装；2：零售核实
+	 *             
 	 */
-	public void getStatisticsDataForState(Record data,String startTime,String endTime,String channelSource) {
+	public void getStatisticsDataForState(Record data,String startTime,String endTime,String channelSource,String outboundType) {
 		
 		StringBuilder sb = new StringBuilder();
 		Object[] pars = new Object[5];
@@ -922,6 +965,13 @@ public class BSHOrderList extends Model<BSHOrderList> {
 			sb.append(" and CHANNEL_SOURCE=?");
 			pars[index] = channelSource;
 			index++;
+		}
+		
+		//外呼类型，1：确认安装；2：零售核实
+		if(!BlankUtils.isBlank(outboundType)) {
+		    sb.append(" and OUTBOUND_TYPE=?");
+		    pars[index] = outboundType;
+		    index++;
 		}
 		
 		sb.append(" GROUP BY STATE");
@@ -959,8 +1009,10 @@ public class BSHOrderList extends Model<BSHOrderList> {
 	 * @param data
 	 * @param startTime
 	 * @param endTime
+	 * @param outboundType
+     *          外呼类型，1：确认安装；2：零售核实
 	 */
-	public void getStatisticsDataForRespond(Record data,String startTime,String endTime,String channelSource) {
+	public void getStatisticsDataForRespond(Record data,String startTime,String endTime,String channelSource,String outboundType) {
 		StringBuilder sb = new StringBuilder();
 		Object[] pars = new Object[5];
 		int index = 0;
@@ -988,6 +1040,13 @@ public class BSHOrderList extends Model<BSHOrderList> {
 			index++;
 		}
 		
+		//外呼类型，1：确认安装；2：零售核实
+        if(!BlankUtils.isBlank(outboundType)) {
+            sb.append(" and OUTBOUND_TYPE=?");
+            pars[index] = outboundType;
+            index++;
+        }
+		
 		sb.append(" GROUP BY RESPOND");
 		
 		List<Record> respondList = Db.find(sb.toString(), ArrayUtils.copyArray(index, pars));
@@ -1010,6 +1069,10 @@ public class BSHOrderList extends Model<BSHOrderList> {
 					data.set("respond9Data", respondCount);
 				}else if(respondValue == 10) {
 					data.set("respond10Data", respondCount);
+				}else if(respondValue == 11) {
+				    data.set("respond11Data", respondCount);
+				}else if(respondValue == 12) {
+				    data.set("respond12Data", respondCount);
 				}
 			}
 		}
@@ -1042,6 +1105,22 @@ public class BSHOrderList extends Model<BSHOrderList> {
 		sb.append("省份:" + getStr("PROVINCE"));
 		sb.append("城市:" + getStr("CITY"));
 		sb.append("呼出号码:" + getStr("CALLOUT_TEL"));
+		
+		//列出几个附加的信息：品牌信息，平台信息，是否带前置流程，外呼的类型
+		int brand = getInt("BRAND");
+		int channelSource = getInt("CHANNEL_SOURCE");
+		int isConfirm = getInt("IS_CONFIRM");
+		int outboundType = getInt("OUTBOUND_TYPE");
+		
+		String brandDesc = MemoryVariableUtil.getDictName("BSH_BRAND", String.valueOf(brand));
+		String channelSourceDesc = MemoryVariableUtil.getDictName("BSH_CHANNEL_SOURCE", String.valueOf(channelSource));
+		String isConfirmDesc = isConfirm==1?"有":"无";
+		String outboundTypeDesc = MemoryVariableUtil.getDictName("BSH_OUTBOUND_TYPE", String.valueOf(outboundType));
+		
+		sb.append("品牌：" + brandDesc);
+		sb.append("平台：" + channelSourceDesc);
+		sb.append("前置流程：" + isConfirmDesc);
+		sb.append("外呼类型：" + outboundTypeDesc);
 		
 		return sb.toString();
 	}

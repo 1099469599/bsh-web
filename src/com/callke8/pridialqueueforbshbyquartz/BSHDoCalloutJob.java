@@ -58,7 +58,8 @@ public class BSHDoCalloutJob implements Job{
 		action.setChannel(channel);
 		action.setApplication(application);
 		action.setData(applicationData);
-		action.setCallerId(callerId);
+		//action.setCallerId(callerId);   //原设置主叫号码
+		action.setCallerId("id-" + bshOrderListId + "<" + callerId + ">");     //新设置主叫号码，主要是用于收集客户未接通过的原因。
 		action.setTimeout(timeout);
 		action.setVariable("bshOrderListId",String.valueOf(bshOrderListId));
 		

@@ -6,31 +6,30 @@ import java.util.List;
 import java.util.Map;
 
 import com.callke8.common.CommonController;
-import com.callke8.utils.BlankUtils;
 import com.jfinal.core.Controller;
 import com.jfinal.plugin.activerecord.Record;
 
 import net.sf.json.JSONObject;
 
 /**
- * 数据统计 Controller 类
+ * 零售核实外呼数据统计 Controller 类
  * 
- * 用于显示时间区间内外呼的情况：已载入、已成功（确认安装、暂不安装、延后安装、提前预约、无/错回复）、已失败、待重呼、已过期、放弃呼叫 等状态的数量的情况
+ * 用于显示时间区间内外呼的情况：已载入、已成功（确认购买、没有购买、无/错回复）、已失败、待重呼、已过期、放弃呼叫 等状态的数量的情况
  * 
  * 并以双饼图的方式展示结果，当客户点击任意一状态值时，还可以弹出数据明细
  * 
  * 
  * 
- * @author 黄文周
+ * @author 黄文周 2019-08-28
  *
  */
-public class BSHDataStatisticsController extends Controller {
+public class BSHVerifyDataStatisticsController extends Controller {
 	
 	
 	public void index() {
 		setAttr("channelSourceComboboxDataFor1",CommonController.getComboboxToString("BSH_CHANNEL_SOURCE","1"));      		//购物平台带请选择的combobox
 		
-		render("list.jsp");
+		render("list_verify.jsp");
 	}
 	
 	/**
@@ -41,7 +40,7 @@ public class BSHDataStatisticsController extends Controller {
 		String startTime = getPara("startTime");
 		String endTime = getPara("endTime");
 		String channelSource = getPara("channelSource");
-		String outboundType = "1";      ////外呼类型，1：确认安装；2：零售核实
+		String outboundType = "2";    //外呼类型，1：确认安装； 2：零售核实
 		
 		Record data = BSHOrderList.dao.getStatisticsData(startTime, endTime,channelSource,outboundType);
 		
@@ -59,36 +58,17 @@ public class BSHDataStatisticsController extends Controller {
 		state2Data.set("value", data.get("state2Data"));
 		list.add(state2Data);
 		
-		//确认安装
-		Record respond1Data = new Record();
-		respond1Data.set("name", "确认安装");
-		respond1Data.set("value", data.get("respond1Data"));
-		list.add(respond1Data);
+		//确认购买过
+		Record respond11Data = new Record();
+		respond11Data.set("name", "确认购买过");
+		respond11Data.set("value", data.get("respond11Data"));
+		list.add(respond11Data);
 		
-		//暂不安装
-		Record respond2Data = new Record();
-		respond2Data.set("name", "暂不安装");
-		respond2Data.set("value", data.get("respond2Data"));
-		list.add(respond2Data);
-		
-		//延后安装
-		Record respond3Data = new Record();
-		respond3Data.set("name", "延后安装");
-		respond3Data.set("value", data.get("respond3Data"));
-		list.add(respond3Data);
-		
-		
-		//提前预约
-		Record respond4Data = new Record();
-		respond4Data.set("name", "提前预约");
-		respond4Data.set("value", data.get("respond4Data"));
-		list.add(respond4Data);
-		
-		//提前预约
-        Record respond12Data = new Record();
-        respond12Data.set("name", "没有购买过");
-        respond12Data.set("value", data.get("respond12Data"));
-        list.add(respond12Data);
+		//没有购买过
+		Record respond12Data = new Record();
+		respond12Data.set("name", "没有购买过");
+		respond12Data.set("value", data.get("respond12Data"));
+		list.add(respond12Data);
 		
 		//错误回复
 		Record respond5Data = new Record();
@@ -102,11 +82,6 @@ public class BSHDataStatisticsController extends Controller {
 		respond9Data.set("value", data.get("respond9Data"));
 		list.add(respond9Data);
 		
-		//无回复
-		Record respond10Data = new Record();
-		respond10Data.set("name", "环境不具备");
-		respond10Data.set("value", data.get("respond10Data"));
-		list.add(respond10Data);
 		
 		//待重呼
 		Record state3Data = new Record();

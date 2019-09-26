@@ -247,12 +247,12 @@ public class CommonConfig extends JFinalConfig {
 		predial.execDial();*/
 		
 		//五、启动博世电器的自动外呼扫描，并执行自动外呼操作
-		/*BSHPredial bshPredial = new BSHPredial();
+		BSHPredial bshPredial = new BSHPredial();
 		try {
 			bshPredial.exec();
 		} catch (SchedulerException e) {
 			e.printStackTrace();
-		}*/
+		}
 		
 	}
 

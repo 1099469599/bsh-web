@@ -79,6 +79,10 @@ public class BSHOrderListVO {
 	 */
 	private String isConfirm;
 	
+	/**
+	 * 外呼类型， 1：确认安装外呼数据类型；2：零售核实类外呼数据
+	 */
+	private String outboundType;
 
 	/**
 	 * 根据 jsonContent 创建一个 BSHOrderListVO 实例
@@ -106,6 +110,7 @@ public class BSHOrderListVO {
 			String brand = null;
 			String channelSource = null;
 			String isConfirm = null;
+			String outboundType = null;
 			
 			if(paramJson.containsKey("orderId")) {
 				orderId = String.valueOf(paramJson.get("orderId"));
@@ -121,7 +126,7 @@ public class BSHOrderListVO {
 				productName = String.valueOf(paramJson.get("productName"));
 			}
 			
-			if(paramJson.containsKey("timeType")) {
+			if(paramJson.containsKey("timeType")) {               //日期类型，1：安装日期；2：送货日期（国美独有）
 				timeType = String.valueOf(paramJson.get("timeType"));
 			}else {
 				timeType = "1";    				//如果 timeType 为空时，设置一个默认值
@@ -152,6 +157,15 @@ public class BSHOrderListVO {
 				isConfirm = "2";                  //给定一个默认值为2，即是不带前置流程
 			}
 			
+			//外呼类型,1:确认安装（默认值）；2：零售核实；
+			if(paramJson.containsKey("outboundType")) {   //是否包含outBoundType
+			    outboundType = String.valueOf(paramJson.get("outboundType"));
+			    if(BlankUtils.isBlank(outboundType) || !outboundType.equals("2")) {  //如果为2时，直接为2，即是这是零售核实数据。如果非2时，则表示这是确认安装数据。
+			        outboundType = "1";
+			    }
+			} else {
+			    outboundType = "1";
+			}
 			
 			orderList.setOrderId(orderId);
 			orderList.setCustomerName(customerName);
@@ -162,6 +176,7 @@ public class BSHOrderListVO {
 			orderList.setBrand(brand);
 			orderList.setChannelSource(channelSource);
 			orderList.setIsConfirm(isConfirm);
+			orderList.setOutboundType(outboundType);
 			
 		}
 		
@@ -207,6 +222,12 @@ public class BSHOrderListVO {
 		}
 		orderListVO.setIsConfirm(isConfirm);
 		
+		String outboundType = controller.getPara("outboundType");
+		if(BlankUtils.isBlank(outboundType) || !outboundType.equals("2")) {
+		    outboundType = "1";
+		}
+		orderListVO.setOutboundType(outboundType);
+		
 		return orderListVO;
 	}
 	
@@ -238,7 +259,15 @@ public class BSHOrderListVO {
 			msg = "购物平台信息为空!";
 		}else if(BlankUtils.isBlank(orderListVO.getIsConfirm())) {
 			msg = "前置标记信息为空!";
-		}
+		}else if(BlankUtils.isBlank(orderListVO.getOutboundType())) {
+            msg = "订单数据外呼类型为空!";
+        }else if(orderListVO.getOutboundType().equals("2") && !orderListVO.getChannelSource().equals("5")) {
+            //如果客户提交的数据的外呼类型为 2 ,即是零售核实类外呼，但是购买平台又不是5，即是非 OIMS 平台时，提示提交数据失败。
+            msg = "提交的数据的外呼类型为零售核实(outboundType=2)类外呼，零售核实类外呼仅针对 OIMS平台(channelSource=5)开放！";
+        }else if(orderListVO.getTimeType().equals("2") && !orderListVO.getChannelSource().equals("4")) {
+            //如果客户提交的数据的时间类型为2，即是送货时间，但是购物平台又不是是，即是非国美平台时，提示提交数据失败。
+            msg = "提交的数据的时间类型（timeType=2）为送货时间,时间类型为送货时间只对国美平台（channelSource=4）开放！";
+        }
 		
 		if(!BlankUtils.isBlank(msg)) {
 			msg = "接收提交订单数据失败,失败原因：" + msg + "!";
@@ -319,5 +348,13 @@ public class BSHOrderListVO {
 	public void setIsConfirm(String isConfirm) {
 		this.isConfirm = isConfirm;
 	}
+
+    public String getOutboundType() {
+        return outboundType;
+    }
+
+    public void setOutboundType(String outboundType) {
+        this.outboundType = outboundType;
+    }
 	
 }
