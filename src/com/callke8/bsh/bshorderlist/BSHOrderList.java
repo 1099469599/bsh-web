@@ -219,6 +219,16 @@ public class BSHOrderList extends Model<BSHOrderList> {
 			int stateResult = r.getInt("STATE");
 			r.set("STATE_DESC", MemoryVariableUtil.getDictName("BSH_CALL_STATE", String.valueOf(stateResult)));
 			
+			//挂机状态码
+			String var2 = r.getStr("VAR2");   //挂机码
+			String var2Desc = var2;
+			if(BlankUtils.isBlank(var2) || stateResult == 2) {     //如果挂机状态码为空，或是外呼状态为2，即是已经外呼成功时
+			    var2Desc = "---";
+			} else {
+			    var2Desc += ":" + MemoryVariableUtil.getDictName("BSH_HANGUP_CAUSE", var2);
+			}
+			r.set("VAR2_DESC", var2Desc);
+			
 			//购物平台
 			int channelSourceResult = r.getInt("CHANNEL_SOURCE");
 			r.set("CHANNEL_SOURCE_DESC", MemoryVariableUtil.getDictName("BSH_CHANNEL_SOURCE", String.valueOf(channelSourceResult)));
@@ -294,6 +304,21 @@ public class BSHOrderList extends Model<BSHOrderList> {
 	public boolean update() {
 		return false;
 	}
+	
+	/**
+     * 更改挂机原因代码
+     * 
+     * @param telId
+     * @param hangupCause
+     * @return
+     */
+    public int updateHangupCause(int id,String hangupCause) {
+        String sql = "update bsh_orderlist set VAR2=? where ID=?";
+        
+        int count = Db.update(sql, hangupCause,id);
+        
+        return count;
+    }
 	
 	/**
 	 * 根据传入的订单信息删除记录

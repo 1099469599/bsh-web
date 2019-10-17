@@ -22,6 +22,7 @@ import com.callke8.bsh.bshorderlist.BSHOrderList;
 import com.callke8.predialqueuforbsh.BSHLaunchDialService;
 import com.callke8.utils.BlankUtils;
 import com.callke8.utils.DateFormatUtils;
+import com.callke8.utils.QuartzUtils;
 import com.jfinal.plugin.activerecord.Record;
 
 /**
@@ -87,6 +88,10 @@ public class BSHPredial {
 		Timer cleanTimeOutTimer = new Timer();
 		cleanTimeOutTimer.scheduleAtFixedRate(new BSHCleanTimeOutTask(), firstTime, 24 * 60 * 60 * 1000);
 		
+		//线程六：挂机结果检查，通过监控GW上的 asterisk服务器(172.16.23.74)的挂机事件，然后进行分析
+        Scheduler scheduler6 = createScheduler("BSHHangupCauseMonitorJob" + System.currentTimeMillis(), 1);
+        scheduler6.scheduleJob(createJobDetail(BSHHangupCauseMonitorJob.class),createSimpleTrigger(startTime,0,1));  //执行一次
+        scheduler6.start();
 	}
 	
 	/**

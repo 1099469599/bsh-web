@@ -336,6 +336,7 @@
 					<th data-options="field:'CREATE_TIME',width:170,align:'center'">创建时间</th>
 					<th data-options="field:'STATE_DESC',width:100,align:'center',formatter:stateformatter">外呼结果</th>
 					<th data-options="field:'LAST_CALL_RESULT',width:180,align:'center'">失败原因</th>
+					<th data-options="field:'VAR2_DESC',width:250,align:'center'">挂机码</th>
 					<th data-options="field:'RETRIED',width:60,align:'center'">已重试</th>
 					<th data-options="field:'LOAD_TIME',width:170,align:'center'">外呼时间</th>
 					<th data-options="field:'BILLSEC',width:100,align:'center'">通话时长</th>
