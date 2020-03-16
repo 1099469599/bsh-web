@@ -873,6 +873,16 @@ public class BSHOrderList extends Model<BSHOrderList> {
 			int stateResult = r.getInt("STATE");
 			r.set("STATE_DESC", MemoryVariableUtil.getDictName("BSH_CALL_STATE", String.valueOf(stateResult)));
 			
+			//挂机状态码
+			String var2 = r.getStr("VAR2");   //挂机码
+			String var2Desc = var2;
+			if(BlankUtils.isBlank(var2) || stateResult == 2) {     //如果挂机状态码为空，或是外呼状态为2，即是已经外呼成功时
+                var2Desc = "---";
+            } else {
+                var2Desc += ":" + MemoryVariableUtil.getDictName("BSH_HANGUP_CAUSE", var2);
+            }
+			r.set("VAR2_DESC", var2Desc);
+			
 			//是否带前置流程
             int isConfirmResult = r.getInt("IS_CONFIRM");
             r.set("IS_CONFIRM_DESC", isConfirmResult==1?"有":"无");

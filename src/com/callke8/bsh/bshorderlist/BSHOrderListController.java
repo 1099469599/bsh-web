@@ -628,8 +628,8 @@ public class BSHOrderListController extends Controller implements IController {
 		List<Record> list = BSHOrderList.dao.getBSHOrderListByCondition(orderId, channelSource, customerName, customerTel, brand, productName,isConfirm,outboundType,state, respond,timeType, createTimeStartTime, createTimeEndTime, loadTimeStartTime, loadTimeEndTime);
 		
 		//得到数据列表，准备以 Excel 方式导出
-		String[] headers = {"订单编号","购物平台","客户姓名","客户号码","省份","城市","外呼号码","品牌","产品名称","日期类型","计划安装日期","前置流程","外呼类型","客户回复","按键值","创建时间","外呼结果","失败原因","已重试","外呼时间","通话时长","下次外呼时间","外呼结果JSON","接口响应"};
-		String[] columns = {"ORDER_ID","CHANNEL_SOURCE_DESC","CUSTOMER_NAME","CUSTOMER_TEL","PROVINCE","CITY","CALLOUT_TEL","BRAND_DESC","PRODUCT_NAME_DESC","TIME_TYPE_DESC","EXPECT_INSTALL_DATE","IS_CONFIRM_DESC","OUTBOUND_TYPE_DESC","RESPOND_DESC","VAR1","CREATE_TIME","STATE_DESC","LAST_CALL_RESULT","RETRIED","LOAD_TIME","BILLSEC","NEXT_CALLOUT_TIME","CALLRESULT_JSON","FEEDBACK_CALLRESULT_RESPOND"};
+		String[] headers = {"订单编号","购物平台","客户姓名","客户号码","省份","城市","外呼号码","品牌","产品名称","日期类型","计划安装日期","前置流程","外呼类型","客户回复","按键值","创建时间","外呼结果","失败原因","挂机码","已重试","外呼时间","通话时长","下次外呼时间","外呼结果JSON","接口响应"};
+		String[] columns = {"ORDER_ID","CHANNEL_SOURCE_DESC","CUSTOMER_NAME","CUSTOMER_TEL","PROVINCE","CITY","CALLOUT_TEL","BRAND_DESC","PRODUCT_NAME_DESC","TIME_TYPE_DESC","EXPECT_INSTALL_DATE","IS_CONFIRM_DESC","OUTBOUND_TYPE_DESC","RESPOND_DESC","VAR1","CREATE_TIME","STATE_DESC","LAST_CALL_RESULT","VAR2_DESC","RETRIED","LOAD_TIME","BILLSEC","NEXT_CALLOUT_TIME","CALLRESULT_JSON","FEEDBACK_CALLRESULT_RESPOND"};
 		//String[] headers = {"订单编号","购物平台","客户姓名","客户号码","省份","城市","外呼号码","品牌","产品名称","日期类型","计划安装日期","客户回复","创建时间","外呼结果","失败原因","已重试","外呼时间","通话时长","下次外呼时间","外呼结果JSON","接口响应"};
 		//String[] columns = {"ORDER_ID","CHANNEL_SOURCE_DESC","CUSTOMER_NAME","CUSTOMER_TEL","PROVINCE","CITY","CALLOUT_TEL","BRAND_DESC","PRODUCT_NAME_DESC","TIME_TYPE_DESC","EXPECT_INSTALL_DATE","RESPOND_DESC","CREATE_TIME","STATE_DESC","LAST_CALL_RESULT","RETRIED","LOAD_TIME","BILLSEC","NEXT_CALLOUT_TIME","CALLRESULT_JSON","FEEDBACK_CALLRESULT_RESPOND"};
 		String fileName = "时间区间:" + startTime + " 至 " + endTime + " .xls";
