@@ -707,6 +707,9 @@ public class BSHCallFlowAgi extends BaseAgiScript {
                                                 您的机器安装日期已确认为12月10号，工程师最迟会在当天早上9:30之前与您联系具体上门时间。感谢您的配合，再见。
                                 场景2：国美
                                                 您的机器安装日期已确认为12月10号，工程师最迟会在当天早上9:30之前与您联系具体上门时间。为确保您的权益，请认准(西门子/博世)厂家的专业工程师。感谢您的配合，再见。
+                                 场景3【其实为场景附加】：条件：国美与苏宁的关系都是线上与线下的同类关系，为了突出两者的竞争关系，如果为苏宁电器时，也播放
+                                                您的机器安装日期已确认为12月10号，工程师最迟会在当天早上9:30之前与您联系具体上门时间。为确保您的权益，请认准(西门子/博世)厂家的专业工程师。感谢您的配合，再见。
+                                 
                                                 
            respond_1_1：您的机器安装日期已确认为
            respond_1_2_timeType_1：工程师最迟会在当天早上9点半之前与您联系具体上门时间，感谢您的配合，再见。
@@ -721,7 +724,9 @@ public class BSHCallFlowAgi extends BaseAgiScript {
 	    StringBuilder sb = new StringBuilder();
 	    
 	    int timeType = bshOrderList.getInt("TIME_TYPE");    //日期类型，1：安装日期；2：送货日期
-	    int brand = bshOrderList.getInt("BRAND");                            //品牌，0：西门子；1：博世
+	    int brand = bshOrderList.getInt("BRAND");           //品牌，0：西门子；1：博世
+	    int channelSource = bshOrderList.getInt("CHANNEL_SOURCE");           //购物平台，1：京东；2：苏宁；3：天猫；4：国美；5：OIMS
+	    
 	    
 	    /**
 	     * (1) 您的机器安装日期已确认为
@@ -750,7 +755,9 @@ public class BSHCallFlowAgi extends BaseAgiScript {
            respond_1_2_timeType_2_brand_0：工程师最迟会在当天早上9点半之前与您联系具体上门时间，为确保您的权益，请认准西门子厂家的专业工程师，感谢您的配合，再见。
            respond_1_2_timeType_2_brand_1：工程师最迟会在当天早上9点半之前与您联系具体上门时间，为确保您的权益，请认准博世厂家的专业工程师，感谢您的配合，再见。
          */
-        if(timeType == 1) {
+        //if(timeType == 1) {  //以前的写法，只要日期类型为送货类型，则直接播放:respond_1_2_timeType_1
+        //现在还要多加一个条件，将苏宁电器除外。
+        if(timeType == 1 && channelSource != 2) {  //如果日期类型为：安装日期 且 购物平台不是苏宁购物时，就播放前简单的那段，否则播放长的那一段。
             sb.append("&");
             sb.append(getVoiceFile("respond_1_2_timeType_1"));
         } else {
